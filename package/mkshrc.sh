@@ -1,4 +1,4 @@
-#!/system/bin/sh
+﻿#!/system/bin/sh
 
 # ==UserScript==
 # @name         mkshrc
@@ -14,13 +14,13 @@
 ###############################################################################
 
 # Check if a command exists in PATH
-function _exist() {
+_exist() {
   command -v "$1" >/dev/null 2>&1
 }
 
 # Resolve the actual binary path, handling aliases
 # Example: if "ls" is an alias, this returns the real command target
-function _resolve() {
+_resolve() {
   local binary="$1"
   local resolved="$(command -v "$binary" 2>/dev/null)"
 
@@ -79,6 +79,9 @@ _exist ip && {
 _exist ss || alias ss='netstat'
 _exist nc || alias nc='netcat'
 
+# Alias su to fakeroot for convenient fake root access
+alias su='fakeroot'
+
 # Use ps -A if it shows more processes than default ps
 [ "$(ps -A | wc -l)" -gt 1 ] && alias ps='ps -A'
 
@@ -87,7 +90,7 @@ _exist find && [ "$color_prompt" = yes ] && {
   alias cfind="find \"$*\" | sed 's/\\n/ /g' | xargs $(_resolve ls) -d"
 }
 
-function pull() {
+pull() {
   local src_path="$1"
   local tmp_path="$TMPDIR/$(basename "$src_path")"
 
@@ -115,7 +118,7 @@ function pull() {
 }
 export pull
 
-function restart() {
+restart() {
   # Magisk & other root managers rely on overlayfs or tmpfs mounts that insert or hide su binaries and management files at boot.
   # When you do a soft reboot (zygote / framework restart, not full kernel reboot):
   # - The system services restart.
@@ -174,7 +177,7 @@ function restart() {
 export restart
 
 # Fix mksh vi mode issues when editing multi-line
-function _vi() {
+_vi() {
   # https://github.com/matan-h/adb-shell/blob/main/startup.sh#L52
   set +o emacs +o vi-tabcomplete
   vi "$@"
@@ -183,7 +186,7 @@ function _vi() {
 alias vi=_vi
 
 # Basic replacement for "man" since Android usually lacks it
-function man() {
+man() {
   local binary="$(_resolve "$1" | cut -d ' ' -f1)"
 
   # Handle empty or recursive call (man man)
@@ -204,7 +207,7 @@ function man() {
 export man
 
 # Sudo wrapper (works with root / su / Magisk)
-function sudo() {
+sudo() {
   [ $# -eq 0 ] && {
     echo 'Usage: sudo <command>' >&2
     return 1
@@ -238,7 +241,7 @@ function sudo() {
 export sudo
 
 # Frida server management
-function frida() {
+frida() {
   # Ensure the frida-server binary is available
   _exist frida-server || {
     echo 'frida-server binary not found in PATH' >&2
@@ -310,7 +313,7 @@ VENDOR_RC='/vendor/etc'
 DEFAULT_RC="$TMPDIR"
 
 # Detect where to install mkshrc based on privilege
-function _detect() {
+_detect() {
   if [ "$(sudo id -un 2>&1)" = 'root' ]; then
     [ -f "$SYSTEM_RC/mkshrc" ] && echo "$SYSTEM_RC" && return
     [ -f "$VENDOR_RC/mkshrc" ] && echo "$VENDOR_RC" && return

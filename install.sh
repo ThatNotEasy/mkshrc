@@ -1,4 +1,4 @@
-#!/system/bin/sh
+﻿#!/system/bin/sh
 
 # ==UserScript==
 # @name         Android Environment Installer
@@ -10,7 +10,7 @@
 # ==/UserScript==
 
 # Check if a command exists in PATH
-function _exist() {
+_exist() {
   command -v "$1" >/dev/null 2>&1
 }
 
@@ -60,6 +60,34 @@ cp -f "$rc_package/$CPU_ABI/busybox/libbusybox.so" "$rc_bin/busybox"
 # https://appuals.com/install-curl-openssl-android/
 cp -f "$rc_package/$CPU_ABI/curl/curl" "$rc_bin/curl"
 cp -f "$rc_package/$CPU_ABI/openssl/openssl" "$rc_bin/openssl"
+
+# Install additional utility packages
+echo '[I] Installing additional utility packages...'
+[ -f "$rc_package/$CPU_ABI/wget/wget" ] && cp -f "$rc_package/$CPU_ABI/wget/wget" "$rc_bin/wget"
+[ -f "$rc_package/$CPU_ABI/nano/nano" ] && cp -f "$rc_package/$CPU_ABI/nano/nano" "$rc_bin/nano"
+[ -f "$rc_package/$CPU_ABI/vim/vim" ] && cp -f "$rc_package/$CPU_ABI/vim/vim" "$rc_bin/vim"
+[ -f "$rc_package/$CPU_ABI/htop/htop" ] && cp -f "$rc_package/$CPU_ABI/htop/htop" "$rc_bin/htop"
+[ -f "$rc_package/$CPU_ABI/git/git" ] && cp -f "$rc_package/$CPU_ABI/git/git" "$rc_bin/git"
+[ -f "$rc_package/$CPU_ABI/rsync/rsync" ] && cp -f "$rc_package/$CPU_ABI/rsync/rsync" "$rc_bin/rsync"
+[ -f "$rc_package/$CPU_ABI/tar/tar" ] && cp -f "$rc_package/$CPU_ABI/tar/tar" "$rc_bin/tar"
+[ -f "$rc_package/$CPU_ABI/unzip/unzip" ] && cp -f "$rc_package/$CPU_ABI/unzip/unzip" "$rc_bin/unzip"
+[ -f "$rc_package/$CPU_ABI/zip/zip" ] && cp -f "$rc_package/$CPU_ABI/zip/zip" "$rc_bin/zip"
+[ -f "$rc_package/$CPU_ABI/grep/grep" ] && cp -f "$rc_package/$CPU_ABI/grep/grep" "$rc_bin/grep"
+[ -f "$rc_package/$CPU_ABI/sed/sed" ] && cp -f "$rc_package/$CPU_ABI/sed/sed" "$rc_bin/sed"
+[ -f "$rc_package/$CPU_ABI/awk/awk" ] && cp -f "$rc_package/$CPU_ABI/awk/awk" "$rc_bin/awk"
+[ -f "$rc_package/$CPU_ABI/find/find" ] && cp -f "$rc_package/$CPU_ABI/find/find" "$rc_bin/find"
+[ -f "$rc_package/$CPU_ABI/tree/tree" ] && cp -f "$rc_package/$CPU_ABI/tree/tree" "$rc_bin/tree"
+[ -f "$rc_package/$CPU_ABI/tmux/tmux" ] && cp -f "$rc_package/$CPU_ABI/tmux/tmux" "$rc_bin/tmux"
+[ -f "$rc_package/$CPU_ABI/screen/screen" ] && cp -f "$rc_package/$CPU_ABI/screen/screen" "$rc_bin/screen"
+
+# Install system administration tools
+[ -f "$rc_package/$CPU_ABI/sudo/sudo" ] && cp -f "$rc_package/$CPU_ABI/sudo/sudo" "$rc_bin/sudo"
+[ -f "$rc_package/$CPU_ABI/fakeroot/fakeroot" ] && {
+    cp -f "$rc_package/$CPU_ABI/fakeroot/fakeroot" "$rc_bin/fakeroot"
+    # Copy fakeroot daemon and library (needed for real fakeroot)
+    [ -f "$rc_package/$CPU_ABI/fakeroot/faked" ] && cp -f "$rc_package/$CPU_ABI/fakeroot/faked" "$rc_bin/faked"
+    [ -f "$rc_package/$CPU_ABI/fakeroot/libfakeroot-0.so" ] && cp -f "$rc_package/$CPU_ABI/fakeroot/libfakeroot-0.so" "$rc_bin/libfakeroot-0.so"
+}
 
 # Install script for adding root trust CA certificates
 cp "$rc_package/update-ca-certificate.sh" "$rc_bin/update-ca-certificate"

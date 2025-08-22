@@ -30,3 +30,6 @@ adb push package/mkshrc.sh /data/local/tmp/package
 adb push package/update-ca-certificate.sh /data/local/tmp/package
 
 adb push install.sh /data/local/tmp/mkshrc
+adb push build-packages.sh /data/local/tmp/build-packages.sh
+
+echo [OK] Deployment completed successfully
