@@ -6,15 +6,12 @@
 
 * User-friendly shell interface with `mkshrc`
 * Pre-packaged common tools (BusyBox, curl, OpenSSL, Frida, supolicy)
-* Support for additional utilities (wget, nano, vim, htop, git, and more)
 * Auto-symlinks for BusyBox applets
 * Certificate injection helper (`update-ca-certificate`)
 * Works on both rooted and non-rooted devices
-* Extensible package system for adding custom binaries
 
 ## Included Binaries
 
-### Core Binaries
 | Binary       | Version                   | Notes                    |
 |--------------|---------------------------|--------------------------|
 | BusyBox      | 1.36.1.1                  | Full applet support      |
@@ -22,28 +19,6 @@
 | curl         | 7.78.0 (NDK 23.0.7599858) | With SSL support         |
 | frida-server | 17.2.16, 16.7.9           | Choose version as needed |
 | supolicy     | 2.82                      | SELinux policy helper    |
-
-### Additional Utilities (Optional)
-| Binary       | Notes                                    |
-|--------------|------------------------------------------|
-| wget         | HTTP/HTTPS/FTP download utility          |
-| nano         | Simple text editor                       |
-| vim          | Advanced text editor                     |
-| htop         | Interactive process viewer               |
-| git          | Version control system                   |
-| rsync        | File synchronization utility             |
-| tar          | Archive utility                          |
-| unzip        | ZIP archive extractor                    |
-| zip          | ZIP archive creator                      |
-| grep         | Text search utility                      |
-| sed          | Stream editor                            |
-| awk          | Text processing tool                     |
-| find         | File search utility                      |
-| tree         | Directory tree viewer                    |
-| tmux         | Terminal multiplexer                     |
-| screen       | Terminal session manager                 |
-
-*Note: Additional utilities require manual compilation for Android. See [ADDING_PACKAGES.md](guide/ADDING_PACKAGES.md) for build instructions.*
 
 ## Installation
 
@@ -90,23 +65,75 @@ source /data/local/tmp/mkshrc
 * `frida {start|status|stop|version}` – manage the Frida server lifecycle.
 * BusyBox applets are symlinked automatically (except `man`).
 
-## Adding More Packages
+# Package Directory
 
-The package system supports additional utilities beyond the core binaries. To add new packages:
+This directory contains pre-compiled binaries for different Android architectures.
 
-1. **Compile for Android** using Android NDK (see [guide/ADDING_PACKAGES.md](guide/ADDING_PACKAGES.md))
-2. **Place binaries** in the appropriate architecture directories under `package/`
-3. **The installer** will automatically detect and install available binaries
+## Directory Structure
 
-Popular packages to consider adding:
-- `wget` - Download files from web servers
-- `nano`/`vim` - Text editors for configuration files
-- `htop` - Monitor system processes and resources
-- `git` - Version control for development work
-- `rsync` - Efficient file synchronization
-- `tmux`/`screen` - Terminal session management
+```
+package/
+├── arm64-v8a/          # 64-bit ARM (most modern Android devices)
+├── armeabi-v7a/        # 32-bit ARM (older Android devices)  
+├── x86/                # 32-bit x86 (Android emulators)
+├── x86_64/             # 64-bit x86 (Android emulators, some tablets)
+├── mkshrc.sh           # Main shell configuration script
+├── source.txt          # Source URLs for all packages
+└── update-ca-certificate.sh  # CA certificate update script
+```
 
-See the [package directory README](package/README.md) for more details.
+## Adding Binaries
+
+To add a binary for a package (e.g., wget):
+
+1. **Compile the binary** for Android using Android NDK
+2. **Place the binary** in the appropriate architecture directory:
+   ```
+   package/arm64-v8a/wget/wget
+   package/armeabi-v7a/wget/wget
+   package/x86/wget/wget
+   package/x86_64/wget/wget
+   ```
+3. **The install.sh script** will automatically detect and install available binaries
+
+## Current Packages
+
+### Core Packages (Included)
+- **busybox** - Multi-call binary with many UNIX utilities
+- **curl** - HTTP/HTTPS client with SSL support
+- **openssl** - SSL/TLS toolkit
+- **frida-server** - Dynamic instrumentation toolkit
+- **supolicy** - SELinux policy manipulation tool
+
+### Additional Packages (Directories Created)
+- **wget** - HTTP/HTTPS/FTP download utility
+- **nano** - Simple text editor
+- **vim** - Advanced text editor
+- **htop** - Interactive process viewer
+- **git** - Version control system
+- **rsync** - File synchronization utility
+- **tar** - Archive utility
+- **unzip/zip** - ZIP archive utilities
+- **grep/sed/awk** - Text processing utilities
+- **find** - File search utility
+- **tree** - Directory tree viewer
+- **tmux/screen** - Terminal multiplexers
+
+## Build Instructions
+
+See [guide/ADDING_PACKAGES.md](guide/ADDING_PACKAGES.md) for detailed instructions on:
+- Setting up Android NDK
+- Cross-compiling packages
+- Static linking for maximum compatibility
+- Testing on Android devices
+
+## Notes
+
+- Binaries must be compiled for Android using Android NDK
+- Static linking is recommended for maximum compatibility
+- All binaries should target minimum API level 21 (Android 5.0)
+- Test on actual devices, not just emulators
+- Strip binaries to reduce size: `strip binary_name`
 
 ## Disclaimer
 
