@@ -1,4 +1,5 @@
 [URL]
+# Core binaries
 https://github.com/topjohnwu/magisk-files/releases/download/files/busybox-1.36.1.1.zip
 https://github.com/frida/frida/releases/download/16.7.19/frida-server-16.7.19-android-arm.xz
 https://github.com/frida/frida/releases/download/16.7.19/frida-server-16.7.19-android-arm64.xz
@@ -10,3 +11,52 @@ https://github.com/frida/frida/releases/download/17.2.16/frida-server-17.2.16-an
 https://github.com/frida/frida/releases/download/17.2.16/frida-server-17.2.16-android-x86_64.xz
 https://download.chainfire.eu/1220/SuperSU/SR5-SuperSU-v2.82-SR5-20171001224502.zip?retrieve_file=1
 https://github.com/robertying/openssl-curl-android/releases/download/1.1.1l-7.78.0/build.tar.gz
+
+# Additional utilities (require manual compilation for Android)
+# wget - HTTP/HTTPS/FTP download utility
+https://ftp.gnu.org/gnu/wget/wget-1.21.4.tar.gz
+
+# nano - Simple text editor
+https://www.nano-editor.org/dist/v7/nano-7.2.tar.xz
+
+# vim - Advanced text editor
+https://github.com/vim/vim/archive/v9.0.1677.tar.gz
+
+# htop - Interactive process viewer
+https://github.com/htop-dev/htop/releases/download/3.2.2/htop-3.2.2.tar.xz
+
+# git - Version control system
+https://github.com/git/git/archive/v2.41.0.tar.gz
+
+# rsync - File synchronization utility
+https://download.samba.org/pub/rsync/src/rsync-3.2.7.tar.gz
+
+# tar - Archive utility (GNU tar)
+https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz
+
+# unzip - ZIP archive extractor
+https://sourceforge.net/projects/infozip/files/UnZip%206.x%20%28latest%29/UnZip%206.0/unzip60.tar.gz
+
+# zip - ZIP archive creator
+https://sourceforge.net/projects/infozip/files/Zip%203.x%20%28latest%29/3.0/zip30.tar.gz
+
+# grep - Text search utility (GNU grep)
+https://ftp.gnu.org/gnu/grep/grep-3.11.tar.xz
+
+# sed - Stream editor (GNU sed)
+https://ftp.gnu.org/gnu/sed/sed-4.9.tar.xz
+
+# awk - Text processing tool (GNU awk)
+https://ftp.gnu.org/gnu/gawk/gawk-5.2.2.tar.xz
+
+# find - File search utility (GNU findutils)
+https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz
+
+# tree - Directory tree viewer
+https://mama.indstate.edu/users/ice/tree/src/tree-2.1.1.tgz
+
+# tmux - Terminal multiplexer
+https://github.com/tmux/tmux/releases/download/3.3a/tmux-3.3a.tar.gz
+
+# screen - Terminal session manager
+https://ftp.gnu.org/gnu/screen/screen-4.9.0.tar.gz
