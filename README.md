@@ -6,12 +6,15 @@
 
 * User-friendly shell interface with `mkshrc`
 * Pre-packaged common tools (BusyBox, curl, OpenSSL, Frida, supolicy)
+* Support for additional utilities (wget, nano, vim, htop, git, and more)
 * Auto-symlinks for BusyBox applets
 * Certificate injection helper (`update-ca-certificate`)
 * Works on both rooted and non-rooted devices
+* Extensible package system for adding custom binaries
 
 ## Included Binaries
 
+### Core Binaries
 | Binary       | Version                   | Notes                    |
 |--------------|---------------------------|--------------------------|
 | BusyBox      | 1.36.1.1                  | Full applet support      |
@@ -19,6 +22,28 @@
 | curl         | 7.78.0 (NDK 23.0.7599858) | With SSL support         |
 | frida-server | 17.2.16, 16.7.9           | Choose version as needed |
 | supolicy     | 2.82                      | SELinux policy helper    |
+
+### Additional Utilities (Optional)
+| Binary       | Notes                                    |
+|--------------|------------------------------------------|
+| wget         | HTTP/HTTPS/FTP download utility          |
+| nano         | Simple text editor                       |
+| vim          | Advanced text editor                     |
+| htop         | Interactive process viewer               |
+| git          | Version control system                   |
+| rsync        | File synchronization utility             |
+| tar          | Archive utility                          |
+| unzip        | ZIP archive extractor                    |
+| zip          | ZIP archive creator                      |
+| grep         | Text search utility                      |
+| sed          | Stream editor                            |
+| awk          | Text processing tool                     |
+| find         | File search utility                      |
+| tree         | Directory tree viewer                    |
+| tmux         | Terminal multiplexer                     |
+| screen       | Terminal session manager                 |
+
+*Note: Additional utilities require manual compilation for Android. See [ADDING_PACKAGES.md](guide/ADDING_PACKAGES.md) for build instructions.*
 
 ## Installation
 
@@ -64,6 +89,24 @@ source /data/local/tmp/mkshrc
 * `pull <path>` – safely copy a file from the system into `/data/local/tmp/`.
 * `frida {start|status|stop|version}` – manage the Frida server lifecycle.
 * BusyBox applets are symlinked automatically (except `man`).
+
+## Adding More Packages
+
+The package system supports additional utilities beyond the core binaries. To add new packages:
+
+1. **Compile for Android** using Android NDK (see [guide/ADDING_PACKAGES.md](guide/ADDING_PACKAGES.md))
+2. **Place binaries** in the appropriate architecture directories under `package/`
+3. **The installer** will automatically detect and install available binaries
+
+Popular packages to consider adding:
+- `wget` - Download files from web servers
+- `nano`/`vim` - Text editors for configuration files
+- `htop` - Monitor system processes and resources
+- `git` - Version control for development work
+- `rsync` - Efficient file synchronization
+- `tmux`/`screen` - Terminal session management
+
+See the [package directory README](package/README.md) for more details.
 
 ## Disclaimer
 
