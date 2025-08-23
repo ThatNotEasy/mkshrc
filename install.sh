@@ -3,8 +3,8 @@
 # ==UserScript==
 # @name         Android Environment Installer
 # @namespace    https://github.com/user/mkshrc/
-# @version      1.1
-# @description  Installs mkshrc shell environment, Frida, BusyBox, and additional binaries on Android devices
+# @version      1.2
+# @description  Installs mkshrc shell environment, Frida, BusyBox, text editors (nano/vim), and additional binaries on Android devices
 # @author       user
 # @match        Android
 # ==/UserScript==
@@ -64,8 +64,34 @@ cp -f "$rc_package/$CPU_ABI/openssl/openssl" "$rc_bin/openssl"
 # Install additional utility packages
 echo '[I] Installing additional utility packages...'
 [ -f "$rc_package/$CPU_ABI/wget/wget" ] && cp -f "$rc_package/$CPU_ABI/wget/wget" "$rc_bin/wget"
-[ -f "$rc_package/$CPU_ABI/nano/nano" ] && cp -f "$rc_package/$CPU_ABI/nano/nano" "$rc_bin/nano"
-[ -f "$rc_package/$CPU_ABI/vim/vim" ] && cp -f "$rc_package/$CPU_ABI/vim/vim" "$rc_bin/vim"
+
+# Install text editors
+echo '[I] Installing text editors...'
+[ -f "$rc_package/$CPU_ABI/nano/nano" ] && {
+  cp -f "$rc_package/$CPU_ABI/nano/nano" "$rc_bin/nano"
+  echo '[I] Nano editor installed'
+}
+[ -f "$rc_package/$CPU_ABI/vim/vim" ] && {
+  cp -f "$rc_package/$CPU_ABI/vim/vim" "$rc_bin/vim"
+  # Install vimtutor if available
+  [ -f "$rc_package/$CPU_ABI/vim/vimtutor" ] && cp -f "$rc_package/$CPU_ABI/vim/vimtutor" "$rc_bin/vimtutor"
+
+  # Install vim configuration files to fix E1187 error
+  if [ -d "$rc_package/$CPU_ABI/vim/vim_config/usr/share/vim" ]; then
+    echo '[I] Installing vim configuration files...'
+    mkdir -p "$rc_bin/../share"
+    cp -rf "$rc_package/$CPU_ABI/vim/vim_config/usr/share/vim" "$rc_bin/../share/"
+
+    # Set VIM environment variable to point to the config directory
+    echo "export VIM=\"$rc_bin/../share/vim\"" >> "$rc_bin/../.vimrc_env"
+    echo "export VIMRUNTIME=\"\$VIM/vim91\"" >> "$rc_bin/../.vimrc_env"
+
+    # Install basic vimrc configuration
+    [ -f "$rc_package/$CPU_ABI/vim/vimrc_basic" ] && cp -f "$rc_package/$CPU_ABI/vim/vimrc_basic" "$rc_bin/../.vimrc"
+  fi
+
+  echo '[I] Vim editor installed (with vimtutor and configuration)'
+}
 [ -f "$rc_package/$CPU_ABI/htop/htop" ] && cp -f "$rc_package/$CPU_ABI/htop/htop" "$rc_bin/htop"
 [ -f "$rc_package/$CPU_ABI/git/git" ] && cp -f "$rc_package/$CPU_ABI/git/git" "$rc_bin/git"
 [ -f "$rc_package/$CPU_ABI/rsync/rsync" ] && cp -f "$rc_package/$CPU_ABI/rsync/rsync" "$rc_bin/rsync"
@@ -112,6 +138,14 @@ echo "[I] RC script installed at $rc_path"
 # Load RC script to configure shell environment
 echo '[I] Loading shell environment...'
 source "$rc_path"
+
+# Display information about installed editors
+echo '[I] Text editors available:'
+[ -f "$rc_bin/nano" ] && echo '  - nano: Simple text editor (Ctrl+O to save, Ctrl+X to exit)'
+[ -f "$rc_bin/vim" ] && {
+  echo '  - vim: Advanced text editor (type :q to quit, :wq to save and quit)'
+  [ -f "$rc_bin/vimtutor" ] && echo '  - vimtutor: Interactive vim tutorial'
+}
 
 # Clean up the deployment package after installation
 echo '[I] Cleaning up deployment package...'

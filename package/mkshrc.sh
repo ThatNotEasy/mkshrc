@@ -427,33 +427,139 @@ RESET=$'\E[0m'
 # Shell context (SELinux domain)
 ctx_shell="$(id -Z 2>/dev/null | awk -F: '{print $3}')"
 
-# Prompt color: red for root, blue for user
+# Parrot OS style prompt colors and symbols
 if [ "$(id -u)" -eq 0 ]; then
-  ctx_color="$RED"
+  # Root user - red theme with danger symbol
+  user_color="$BRIGHT_RED"
+  host_color="$RED"
+  symbol_color="$BRIGHT_RED"
+  prompt_symbol="💀"
   ctx_type='#'
 else
-  ctx_color="$BRIGHT_BLUE"
+  # Regular user - cyan/green theme with parrot symbol
+  user_color="$BRIGHT_CYAN"
+  host_color="$BRIGHT_GREEN"
+  symbol_color="$BRIGHT_MAGENTA"
+  prompt_symbol="🦜"
   ctx_type='$'
 fi
 
-# Build PS1 with exit code and color if supported
-if [ "$color_prompt" = yes ]; then
-  PS1='${|
+
+
+###############################################################################
+# Persistent History Support
+###############################################################################
+
+# Enable persistent history (set to true to enable)
+ENABLE_PERSISTENT_HISTORY=true
+
+if [ "$ENABLE_PERSISTENT_HISTORY" = true ]; then
+  # Persistent history workaround for mksh on Android
+  # mksh disables history by default on Android (see android.stackexchange:152061)
+  HISTFILE="$TMPDIR/.mksh_history"
+
+  # Create history directory if it doesn't exist
+  [ ! -d "$(dirname "$HISTFILE")" ] && mkdir -p "$(dirname "$HISTFILE")"
+
+  # Load existing history if file exists
+  # "print -s": print to the shell history, enabling history features
+  if [ -f "$HISTFILE" ]; then
+    while read -r cmd; do
+      [ -n "$cmd" ] && print -s "$cmd"
+    done < "$HISTFILE"
+  fi
+
+  # Function to append new commands to history file
+  _add_to_history() {
+    # fc -ln -1: get the last command from history without line numbers
+    local last_command="$(fc -ln -1 2>/dev/null)" || return
+
+    # Remove leading/trailing whitespace
+    last_command="$(echo "$last_command" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+    # Skip empty commands or history commands themselves
+    [ -z "$last_command" ] && return
+    echo "$last_command" | grep -q "^_add_to_history\|^history\|^fc " && return
+
+    # Get the last line from history file
+    local last_line="$(tail -n 1 "$HISTFILE" 2>/dev/null || true)"
+
+    # Only append if the command is different from the last saved command
+    if [ "$last_command" != "$last_line" ]; then
+      echo "$last_command" >> "$HISTFILE"
+    fi
+  }
+
+  # Hook the history function into the prompt
+  # This ensures history is saved after each command
+  if [ "$color_prompt" = yes ]; then
+    PS1='${|
     local e=$?
 
-    (( e )) && REPLY+="${RESET}${RED}${e}${WHITE}|"
+    # Save command to history
+    _add_to_history
+
+    # Show exit code if non-zero with red background
+    (( e )) && REPLY+="${RESET}${WHITE}${RED} ✗ ${e} ${RESET} "
 
     return $e
-  }${YELLOW}(${ctx_shell}) ${ctx_color}${USER}@${HOSTNAME}${WHITE}:${BRIGHT_CYAN}${PWD:-?}${WHITE}${ctx_type}${RESET} '
+  }${BRIGHT_WHITE}[${BRIGHT_YELLOW}$(date "+%H:%M:%S")${BRIGHT_WHITE}]${symbol_color}${prompt_symbol} ${user_color}${USER}${WHITE}@${host_color}${HOSTNAME} ${WHITE}in ${BRIGHT_CYAN}${|
+    # Show current directory name only (like Parrot OS)
+    local dir="${PWD##*/}"
+    [ "$PWD" = "$HOME" ] && REPLY="~" || REPLY="${dir:-/}"
+  }${WHITE}${YELLOW}${ctx_shell:+ (${ctx_shell})}
+${symbol_color}└─${ctx_type}${RESET} '
+  else
+    PS1='${|
+    local e=$?
+
+    # Save command to history
+    _add_to_history
+
+    # Show exit code if non-zero
+    (( e )) && REPLY+="[${e}] "
+
+    return $e
+  }[$(date "+%H:%M:%S")]${USER}@${HOSTNAME} in ${|
+    # Show current directory name only
+    local dir="${PWD##*/}"
+    [ "$PWD" = "$HOME" ] && REPLY="~" || REPLY="${dir:-/}"
+  }${ctx_shell:+ (${ctx_shell})}
+└─${ctx_type} '
+  fi
+
+  # Add a history command for convenience
+  history() {
+    if [ $# -eq 0 ]; then
+      # Show last 20 commands by default
+      [ -f "$HISTFILE" ] && tail -n 20 "$HISTFILE" | nl -v $(($(wc -l < "$HISTFILE" 2>/dev/null || echo 0) - 19))
+    elif [ "$1" = "-c" ]; then
+      # Clear history
+      > "$HISTFILE"
+      echo "History cleared"
+    elif [ "$1" -gt 0 ] 2>/dev/null; then
+      # Show last N commands
+      [ -f "$HISTFILE" ] && tail -n "$1" "$HISTFILE" | nl -v $(($(wc -l < "$HISTFILE" 2>/dev/null || echo 0) - $1 + 1))
+    else
+      echo "Usage: history [N] | history -c"
+      echo "  N     Show last N commands"
+      echo "  -c    Clear history"
+    fi
+  }
+  export history
+
+  echo '[I] Persistent history enabled: $HISTFILE'
 else
-  PS1='${|
-    local e=$?
-
-    (( e )) && REPLY+="${e}|"
-
-    return $e
-  }(${ctx_shell}) ${USER}@${HOSTNAME}:${PWD:-?}${ctx_type} '
+  echo '[W] Persistent history disabled'
 fi
 
-# TODO: add persistent history via custom function
-# https://github.com/matan-h/adb-shell/blob/main/startup.sh#L73
+###############################################################################
+# Additional Configurations
+###############################################################################
+
+# Source additional shell configurations if they exist
+[ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
+[ -f "$HOME/.profile" ] && source "$HOME/.profile"
+
+# Source vim environment variables if available (fixes E1187 error)
+[ -f "$rc_bin/../.vimrc_env" ] && source "$rc_bin/../.vimrc_env"

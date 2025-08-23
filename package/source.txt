@@ -16,11 +16,21 @@ https://github.com/robertying/openssl-curl-android/releases/download/1.1.1l-7.78
 # wget - HTTP/HTTPS/FTP download utility
 https://ftp.gnu.org/gnu/wget/wget-1.21.4.tar.gz
 
-# nano - Simple text editor
-https://www.nano-editor.org/dist/v7/nano-7.2.tar.xz
+# nano - Simple text editor (v7.2) - Cross-compiled static binaries
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/nano/nano-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/nano/nano-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/nano/nano-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/nano/nano-x64
 
-# vim - Advanced text editor
-https://github.com/vim/vim/archive/v9.0.1677.tar.gz
+# vim - Advanced text editor (v9.1.0143) - Cross-compiled static binaries
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-x64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-x64
 
 # htop - Interactive process viewer
 https://github.com/htop-dev/htop/releases/download/3.2.2/htop-3.2.2.tar.xz
