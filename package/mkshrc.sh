@@ -477,6 +477,7 @@ else
   [ "$PWD" = "$HOME" ] && REPLY="~" || REPLY="${dir:-/}"
 }${ctx_shell:+ (${ctx_shell})}
 └─${ctx_type} '
+fi
 
 ###############################################################################
 # Additional Configurations
