@@ -22,9 +22,35 @@ FRIDA=${1:-'16.7.19'} # Default Frida version if not provided
 rc_package="$TMPDIR/package" # Source package folder
 rc_bin="$TMPDIR/bin"         # Destination folder for binaries
 
+# Map Android ABI to package directory structure
+# Android reports: arm64-v8a, armeabi-v7a, x86, x86_64
+# Package structure uses the actual Android ABI names
+case "$CPU_ABI" in
+  arm64-v8a)
+    PACKAGE_ABI="arm64-v8a"
+    ;;
+  armeabi-v7a)
+    PACKAGE_ABI="armeabi-v7a"
+    ;;
+  x86)
+    PACKAGE_ABI="x86"
+    ;;
+  x86_64)
+    PACKAGE_ABI="x86_64"
+    ;;
+  *)
+    echo "[E] Unsupported CPU ABI architecture: $CPU_ABI"
+    echo "[I] Supported architectures: arm64-v8a, armeabi-v7a, x86, x86_64"
+    exit 1
+    ;;
+esac
+
 # Verify CPU ABI support and exit if not supported
-[ ! -d "$rc_package/$CPU_ABI" ] && {
-  echo "[E] Unsupported CPU ABI architecture: $CPU_ABI"
+[ ! -d "$rc_package/$PACKAGE_ABI" ] && {
+  echo "[E] Package directory not found for architecture: $PACKAGE_ABI"
+  echo "[E] Expected directory: $rc_package/$PACKAGE_ABI"
+  echo "[I] Available architectures:"
+  ls -1 "$rc_package/" | grep -E '^(arm|x86)' | sed 's/^/[I]   /'
   exit 1
 }
 
@@ -38,66 +64,78 @@ mkdir -p "$rc_bin"
 _exist supolicy || {
   echo '[I] Installing supolicy binaries...'
   # https://www.synacktiv.com/en/offers/trainings/android-for-security-engineers
-  cp -f "$rc_package/$CPU_ABI/supolicy/supolicy" "$rc_bin/supolicy"
-  cp -f "$rc_package/$CPU_ABI/supolicy/libsupol.so" "$rc_bin/libsupol.so"
+  cp -f "$rc_package/$PACKAGE_ABI/supolicy/supolicy" "$rc_bin/supolicy" 2>/dev/null || echo "[W] supolicy not found for $PACKAGE_ABI"
+  cp -f "$rc_package/$PACKAGE_ABI/supolicy/libsupol.so" "$rc_bin/libsupol.so" 2>/dev/null || echo "[W] libsupol.so not found for $PACKAGE_ABI"
 }
 
 # Install specific Frida server version for the device's CPU ABI
 # https://github.com/frida/frida/
-echo "[I] Installing Frida server version $FRIDA..."
-frida=$(find "$rc_package/$CPU_ABI/frida" -type f -name "frida-server-$FRIDA*android-*")
+echo "[I] Installing Frida server version $FRIDA for $CPU_ABI..."
+frida=$(find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-$FRIDA*android-*")
 
 if [ -z "$frida" ]; then
-  echo "[W] Frida version not available: $FRIDA"
+  echo "[W] Frida version $FRIDA not available for $PACKAGE_ABI"
+  echo "[I] Available Frida versions:"
+  find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-*" 2>/dev/null | sed 's/.*frida-server-/[I]   /' | sed 's/-android.*//' | sort -u
 else
   cp -f "$frida" "$rc_bin/frida-server"
+  echo "[I] Installed: $(basename "$frida")"
+fi
+
+# Install frida wrapper script from architecture-specific directory
+if [ -f "$rc_package/$PACKAGE_ABI/frida/frida" ]; then
+  cp -f "$rc_package/$PACKAGE_ABI/frida/frida" "$rc_bin/frida"
+  chmod +x "$rc_bin/frida"
+  echo "[I] Installed frida wrapper script"
+else
+  echo "[W] Frida wrapper script not found for $PACKAGE_ABI"
 fi
 
 # Install additional CPU ABI-specific binaries
 # https://github.com/topjohnwu/magisk-files/
 echo '[I] Installing additional binaries...'
-cp -f "$rc_package/$CPU_ABI/busybox/libbusybox.so" "$rc_bin/busybox"
+cp -f "$rc_package/$PACKAGE_ABI/busybox/libbusybox.so" "$rc_bin/busybox" 2>/dev/null || echo "[W] busybox not found for $PACKAGE_ABI"
 # https://appuals.com/install-curl-openssl-android/
-cp -f "$rc_package/$CPU_ABI/curl/curl" "$rc_bin/curl"
-cp -f "$rc_package/$CPU_ABI/openssl/openssl" "$rc_bin/openssl"
+cp -f "$rc_package/$PACKAGE_ABI/curl/curl" "$rc_bin/curl" 2>/dev/null || echo "[W] curl not found for $PACKAGE_ABI"
+cp -f "$rc_package/$PACKAGE_ABI/openssl/openssl" "$rc_bin/openssl" 2>/dev/null || echo "[W] openssl not found for $PACKAGE_ABI"
 
 # Install additional utility packages
 echo '[I] Installing additional utility packages...'
-[ -f "$rc_package/$CPU_ABI/wget/wget" ] && cp -f "$rc_package/$CPU_ABI/wget/wget" "$rc_bin/wget"
+[ -f "$rc_package/$PACKAGE_ABI/wget/wget" ] && cp -f "$rc_package/$PACKAGE_ABI/wget/wget" "$rc_bin/wget"
 
 # Install text editors and system tools
 echo '[I] Installing text editors and system tools...'
-[ -f "$rc_package/$CPU_ABI/vim/vim" ] && {
-  cp -f "$rc_package/$CPU_ABI/vim/vim" "$rc_bin/vim"
+[ -f "$rc_package/$PACKAGE_ABI/vim/vim" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/vim/vim" "$rc_bin/vim"
   # Install vimtutor if available
-  [ -f "$rc_package/$CPU_ABI/vim/vimtutor" ] && cp -f "$rc_package/$CPU_ABI/vim/vimtutor" "$rc_bin/vimtutor"
+  [ -f "$rc_package/$PACKAGE_ABI/vim/vimtutor" ] && cp -f "$rc_package/$PACKAGE_ABI/vim/vimtutor" "$rc_bin/vimtutor"
 
   # Install vim configuration files to fix E1187 error
-  if [ -d "$rc_package/$CPU_ABI/vim/vim_config/usr/share/vim" ]; then
+  if [ -d "$rc_package/$PACKAGE_ABI/vim/vim_config/usr/share/vim" ]; then
     echo '[I] Installing vim configuration files...'
     mkdir -p "$rc_bin/../share"
-    cp -rf "$rc_package/$CPU_ABI/vim/vim_config/usr/share/vim" "$rc_bin/../share/"
+    cp -rf "$rc_package/$PACKAGE_ABI/vim/vim_config/usr/share/vim" "$rc_bin/../share/"
 
     # Set VIM environment variable to point to the config directory
     echo "export VIM=\"$rc_bin/../share/vim\"" >> "$rc_bin/../.vimrc_env"
     echo "export VIMRUNTIME=\"\$VIM/vim91\"" >> "$rc_bin/../.vimrc_env"
 
     # Install basic vimrc configuration
-    [ -f "$rc_package/$CPU_ABI/vim/vimrc_basic" ] && cp -f "$rc_package/$CPU_ABI/vim/vimrc_basic" "$rc_bin/../.vimrc"
+    [ -f "$rc_package/$PACKAGE_ABI/vim/vimrc_basic" ] && cp -f "$rc_package/$PACKAGE_ABI/vim/vimrc_basic" "$rc_bin/../.vimrc"
   fi
 
   echo '[I] Vim editor installed (with vimtutor and configuration)'
 }
 
 # Install htop process viewer
-[ -f "$rc_package/$CPU_ABI/htop/htop" ] && {
-  cp -f "$rc_package/$CPU_ABI/htop/htop" "$rc_bin/htop"
+[ -f "$rc_package/$PACKAGE_ABI/htop/htop" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/htop/htop" "$rc_bin/htop"
 
   # Install ncursesw terminfo files required for htop
-  if [ -d "$rc_package/$CPU_ABI/htop/usr/share" ]; then
+  if [ -d "$rc_package/$PACKAGE_ABI/htop/usr/share" ]; then
     echo '[I] Installing terminfo files for htop...'
     mkdir -p "$rc_bin/../share"
-    cp -rf "$rc_package/$CPU_ABI/htop/usr/share"/* "$rc_bin/../share/"
+    cp -rf "$rc_package/$PACKAGE_ABI/htop/usr/share"/* "$rc_bin/../share/"
 
     # Set TERMINFO environment variable
     echo "export TERMINFO=\"$rc_bin/../share/terminfo\"" >> "$rc_bin/../.htoprc_env"
@@ -106,15 +144,14 @@ echo '[I] Installing text editors and system tools...'
     echo '[I] Htop process viewer installed'
   fi
 }
-[ -f "$rc_package/$CPU_ABI/htop/htop" ] && cp -f "$rc_package/$CPU_ABI/htop/htop" "$rc_bin/htop"
 
 # Install system administration tools
-[ -f "$rc_package/$CPU_ABI/sudo/sudo" ] && cp -f "$rc_package/$CPU_ABI/sudo/sudo" "$rc_bin/sudo"
-[ -f "$rc_package/$CPU_ABI/fakeroot/fakeroot" ] && {
-    cp -f "$rc_package/$CPU_ABI/fakeroot/fakeroot" "$rc_bin/fakeroot"
+[ -f "$rc_package/$PACKAGE_ABI/sudo/sudo" ] && cp -f "$rc_package/$PACKAGE_ABI/sudo/sudo" "$rc_bin/sudo"
+[ -f "$rc_package/$PACKAGE_ABI/fakeroot/fakeroot" ] && {
+    cp -f "$rc_package/$PACKAGE_ABI/fakeroot/fakeroot" "$rc_bin/fakeroot"
     # Copy fakeroot daemon and library (needed for real fakeroot)
-    [ -f "$rc_package/$CPU_ABI/fakeroot/faked" ] && cp -f "$rc_package/$CPU_ABI/fakeroot/faked" "$rc_bin/faked"
-    [ -f "$rc_package/$CPU_ABI/fakeroot/libfakeroot-0.so" ] && cp -f "$rc_package/$CPU_ABI/fakeroot/libfakeroot-0.so" "$rc_bin/libfakeroot-0.so"
+    [ -f "$rc_package/$PACKAGE_ABI/fakeroot/faked" ] && cp -f "$rc_package/$PACKAGE_ABI/fakeroot/faked" "$rc_bin/faked"
+    [ -f "$rc_package/$PACKAGE_ABI/fakeroot/libfakeroot-0.so" ] && cp -f "$rc_package/$PACKAGE_ABI/fakeroot/libfakeroot-0.so" "$rc_bin/libfakeroot-0.so"
 }
 
 # Install script for adding root trust CA certificates

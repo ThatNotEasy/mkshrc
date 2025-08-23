@@ -242,38 +242,80 @@ sudo() {
 }
 export sudo
 
-# Frida server management
+frida
 frida() {
+  # Show help first (before checking for binary)
+  case "$1" in
+  -h|--help|help)
+    echo "Frida server management utility"
+    echo ""
+    echo "Usage: frida {start|status|stop|version|help}"
+    echo ""
+    echo "Commands:"
+    echo "  start    Start the Frida server in daemon mode"
+    echo "  status   Check if Frida server is running"
+    echo "  stop     Stop the Frida server"
+    echo "  version  Show Frida server version"
+    echo "  help     Show this help message"
+    echo ""
+    echo "Note: Root privileges recommended for start/stop operations"
+    echo "      Can run without root on some devices/configurations"
+    echo "      Requires frida-server binary in PATH"
+    return 0
+    ;;
+  esac
+
   # Ensure the frida-server binary is available
   _exist frida-server || {
     echo 'frida-server binary not found in PATH' >&2
+    echo 'Use "frida help" for usage information' >&2
     return 1
   }
 
   # Show Frida version
   [ "$1" = 'version' ] && {
     frida-server --version
-    return
+    return 0
   }
 
-  # Verify that the current user has root privileges
-  [ "$(sudo id -un 2>&1)" = 'root' ] || {
-    echo 'Permission denied. Privileged user not available.'
-    exit 1
+  # Helper function to check if frida-server is running (avoids recursion)
+  _frida_is_running() {
+    pgrep -f frida-server >/dev/null 2>&1
+  }
+
+  # Check if we have root privileges (optional for non-rooted devices)
+  _has_root() {
+    # Try multiple methods to detect root access
+    [ "$(id -u 2>/dev/null)" = "0" ] && return 0  # Already root
+    [ "$(sudo id -un 2>/dev/null)" = "root" ] && return 0  # Can sudo to root
+    command -v su >/dev/null 2>&1 && su -c 'id -u' 2>/dev/null | grep -q '^0$' && return 0  # Can su to root
+    return 1  # No root access
   }
 
   case "$1" in
   start)
     # Start Frida server if not already running
-    frida status >/dev/null 2>&1 && {
+    if _frida_is_running; then
       echo 'Already running' >&2
       return 1
-    }
-    sudo setenforce 0 >/dev/null 2>&1 # disable SELinux temporarily
-    sudo frida-server -D || {
-      echo 'Start failed' >&2
-      return 1
-    }
+    fi
+
+    # Try to start frida-server with appropriate privileges
+    if _has_root; then
+      echo '[I] Starting frida-server with root privileges...'
+      sudo setenforce 0 >/dev/null 2>&1 # disable SELinux temporarily
+      sudo frida-server -D || {
+        echo 'Start failed with root privileges' >&2
+        return 1
+      }
+    else
+      echo '[I] Starting frida-server without root (may have limited functionality)...'
+      frida-server -D || {
+        echo 'Start failed without root privileges' >&2
+        echo 'Try running with root access or check device permissions' >&2
+        return 1
+      }
+    fi
     echo 'Started'
     ;;
   status)
@@ -286,20 +328,41 @@ frida() {
     echo "Running ($pid)"
     ;;
   stop)
-    # Stop Frida server and re-enable SELinux
-    sudo kill -9 $(pgrep -f frida-server) 2>/dev/null
-    #sudo setenforce 1 >/dev/null 2>&1
+    # Stop Frida server
+    local pids="$(pgrep -f frida-server)"
+    if [ -n "$pids" ]; then
+      # Try to kill with appropriate privileges
+      if _has_root; then
+        echo '[I] Stopping frida-server with root privileges...'
+        sudo kill -9 $pids 2>/dev/null || {
+          echo 'Failed to kill frida-server processes with root' >&2
+          return 1
+        }
+        #sudo setenforce 1 >/dev/null 2>&1  # re-enable SELinux
+      else
+        echo '[I] Stopping frida-server without root...'
+        kill -9 $pids 2>/dev/null || {
+          echo 'Failed to kill frida-server processes without root' >&2
+          echo 'Try running with root access or use task manager' >&2
+          return 1
+        }
+      fi
+    else
+      echo 'No frida-server processes found' >&2
+      return 1
+    fi
     sleep 1
 
-    frida status >/dev/null 2>&1 && {
+    if _frida_is_running; then
       _exist magisk && echo 'Use Magisk to stop' >&2 || echo 'Still running' >&2
       return 1
-    }
+    fi
     echo 'Stopped'
     ;;
   *)
     # Invalid usage
-    echo 'Usage: frida {start|status|stop|version}' >&2
+    echo 'Usage: frida {start|status|stop|version|help}' >&2
+    echo 'Use "frida help" for more information' >&2
     return 1
     ;;
   esac
@@ -312,7 +375,14 @@ export frida
 
 SYSTEM_RC='/system/etc'
 VENDOR_RC='/vendor/etc'
-DEFAULT_RC="$TMPDIR"
+# Determine the default RC directory
+if [ -d "/system" ] && [ -d "/data/local/tmp" ]; then
+  # On Android, use TMPDIR
+  DEFAULT_RC="${TMPDIR:-/data/local/tmp}"
+else
+  # Not on Android, use current script directory
+  DEFAULT_RC="$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")" 2>/dev/null || dirname "$0")"
+fi
 
 # Detect where to install mkshrc based on privilege
 _detect() {
@@ -326,6 +396,7 @@ _detect() {
 rc_root="$DEFAULT_RC"            # fallback to temp dir
 rc_tmpfs="$(_detect "$rc_root")" # check for root locations
 
+#echo "[D] DEFAULT_RC: $DEFAULT_RC"
 #echo "[D] RC root path: $rc_root"
 #echo "[D] RC tmpfs path: $rc_tmpfs"
 
@@ -379,12 +450,28 @@ if [ "$rc_root" != "$rc_tmpfs" ]; then
 else
   echo '[E] RC in persistent mode unavailable'
   echo '[W] Script sets for current shell context only'
+  # Keep rc_root as DEFAULT_RC when persistence is not available
+  rc_root="$DEFAULT_RC"
 fi
 
 rc_bin="$rc_root/bin"
 
-# Add to PATH if not already there
-echo "$PATH" | grep -q "$rc_bin" || export PATH="$PATH:$rc_bin"
+# Ensure the bin directory exists
+[ ! -d "$rc_bin" ] && {
+  echo "[W] Bin directory not found: $rc_bin"
+  echo "[I] Creating bin directory..."
+  mkdir -p "$rc_bin" 2>/dev/null || {
+    echo "[E] Failed to create bin directory"
+  }
+}
+
+# Add to PATH if not already there and directory exists
+if [ -d "$rc_bin" ]; then
+  echo "$PATH" | grep -q "$rc_bin" || export PATH="$PATH:$rc_bin"
+  echo "[I] Added to PATH: $rc_bin"
+else
+  echo "[E] Bin directory does not exist: $rc_bin"
+fi
 
 # Provide supolicy fallback (used in Magisk contexts)
 [ -f "$rc_bin/libsupol.so" ] && alias supolicy="LD_LIBRARY_PATH='$rc_bin' $rc_bin/supolicy"
@@ -454,7 +541,7 @@ if [ "$color_prompt" = yes ]; then
   local e=$?
 
   # Show exit code if non-zero with red background
-  (( e )) && REPLY+="${RESET}${WHITE}${RED} ✗ ${e} ${RESET} "
+  (( e )) && REPLY+="${RESET}${WHITE}${RED} ${e} ${RESET} "
 
   return $e
 }${BRIGHT_WHITE}[${BRIGHT_YELLOW}$(date "+%H:%M:%S")${BRIGHT_WHITE}]${symbol_color}${prompt_symbol} ${user_color}${USER}${WHITE}@${host_color}${HOSTNAME} ${WHITE}in ${BRIGHT_CYAN}${|
