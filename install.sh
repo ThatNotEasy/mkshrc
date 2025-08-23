@@ -4,7 +4,7 @@
 # @name         Android Environment Installer
 # @namespace    https://github.com/user/mkshrc/
 # @version      1.2
-# @description  Installs mkshrc shell environment, Frida, BusyBox, vim text editor, and additional binaries on Android devices
+# @description  Installs mkshrc shell environment, Frida, BusyBox, vim text editor, htop process viewer, and additional binaries on Android devices
 # @author       user
 # @match        Android
 # ==/UserScript==
@@ -65,8 +65,8 @@ cp -f "$rc_package/$CPU_ABI/openssl/openssl" "$rc_bin/openssl"
 echo '[I] Installing additional utility packages...'
 [ -f "$rc_package/$CPU_ABI/wget/wget" ] && cp -f "$rc_package/$CPU_ABI/wget/wget" "$rc_bin/wget"
 
-# Install text editors
-echo '[I] Installing text editors...'
+# Install text editors and system tools
+echo '[I] Installing text editors and system tools...'
 [ -f "$rc_package/$CPU_ABI/vim/vim" ] && {
   cp -f "$rc_package/$CPU_ABI/vim/vim" "$rc_bin/vim"
   # Install vimtutor if available
@@ -88,19 +88,25 @@ echo '[I] Installing text editors...'
 
   echo '[I] Vim editor installed (with vimtutor and configuration)'
 }
+
+# Install htop process viewer
+[ -f "$rc_package/$CPU_ABI/htop/htop" ] && {
+  cp -f "$rc_package/$CPU_ABI/htop/htop" "$rc_bin/htop"
+
+  # Install ncursesw terminfo files required for htop
+  if [ -d "$rc_package/$CPU_ABI/htop/usr/share" ]; then
+    echo '[I] Installing terminfo files for htop...'
+    mkdir -p "$rc_bin/../share"
+    cp -rf "$rc_package/$CPU_ABI/htop/usr/share"/* "$rc_bin/../share/"
+
+    # Set TERMINFO environment variable
+    echo "export TERMINFO=\"$rc_bin/../share/terminfo\"" >> "$rc_bin/../.htoprc_env"
+    echo '[I] Htop process viewer installed (with terminfo support)'
+  else
+    echo '[I] Htop process viewer installed'
+  fi
+}
 [ -f "$rc_package/$CPU_ABI/htop/htop" ] && cp -f "$rc_package/$CPU_ABI/htop/htop" "$rc_bin/htop"
-[ -f "$rc_package/$CPU_ABI/git/git" ] && cp -f "$rc_package/$CPU_ABI/git/git" "$rc_bin/git"
-[ -f "$rc_package/$CPU_ABI/rsync/rsync" ] && cp -f "$rc_package/$CPU_ABI/rsync/rsync" "$rc_bin/rsync"
-[ -f "$rc_package/$CPU_ABI/tar/tar" ] && cp -f "$rc_package/$CPU_ABI/tar/tar" "$rc_bin/tar"
-[ -f "$rc_package/$CPU_ABI/unzip/unzip" ] && cp -f "$rc_package/$CPU_ABI/unzip/unzip" "$rc_bin/unzip"
-[ -f "$rc_package/$CPU_ABI/zip/zip" ] && cp -f "$rc_package/$CPU_ABI/zip/zip" "$rc_bin/zip"
-[ -f "$rc_package/$CPU_ABI/grep/grep" ] && cp -f "$rc_package/$CPU_ABI/grep/grep" "$rc_bin/grep"
-[ -f "$rc_package/$CPU_ABI/sed/sed" ] && cp -f "$rc_package/$CPU_ABI/sed/sed" "$rc_bin/sed"
-[ -f "$rc_package/$CPU_ABI/awk/awk" ] && cp -f "$rc_package/$CPU_ABI/awk/awk" "$rc_bin/awk"
-[ -f "$rc_package/$CPU_ABI/find/find" ] && cp -f "$rc_package/$CPU_ABI/find/find" "$rc_bin/find"
-[ -f "$rc_package/$CPU_ABI/tree/tree" ] && cp -f "$rc_package/$CPU_ABI/tree/tree" "$rc_bin/tree"
-[ -f "$rc_package/$CPU_ABI/tmux/tmux" ] && cp -f "$rc_package/$CPU_ABI/tmux/tmux" "$rc_bin/tmux"
-[ -f "$rc_package/$CPU_ABI/screen/screen" ] && cp -f "$rc_package/$CPU_ABI/screen/screen" "$rc_bin/screen"
 
 # Install system administration tools
 [ -f "$rc_package/$CPU_ABI/sudo/sudo" ] && cp -f "$rc_package/$CPU_ABI/sudo/sudo" "$rc_bin/sudo"
@@ -135,11 +141,18 @@ echo "[I] RC script installed at $rc_path"
 echo '[I] Loading shell environment...'
 source "$rc_path"
 
-# Display information about installed editors
-echo '[I] Text editors available:'
+# Display information about installed tools
+echo '[I] Text editors and system tools available:'
 [ -f "$rc_bin/vim" ] && {
   echo '  - vim: Advanced text editor (type :q to quit, :wq to save and quit)'
   [ -f "$rc_bin/vimtutor" ] && echo '  - vimtutor: Interactive vim tutorial'
+}
+[ -f "$rc_bin/htop" ] && {
+  if [ -f "$rc_bin/../.htoprc_env" ]; then
+    echo '  - htop: Interactive process viewer (press q to quit) - with terminfo support'
+  else
+    echo '  - htop: Interactive process viewer (press q to quit)'
+  fi
 }
 
 # Clean up the deployment package after installation
@@ -147,3 +160,4 @@ echo '[I] Cleaning up deployment package...'
 rm -rf "$rc_package" "$TMPDIR/install.sh"
 
 echo '[I] Installation completed successfully'
+echo '[I] mkshrc environment is now active'

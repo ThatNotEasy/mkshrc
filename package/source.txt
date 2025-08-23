@@ -23,6 +23,18 @@ https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-a
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-arm
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-x86
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-x64
+
+# htop - Interactive process viewer (v3.3.0) - Cross-compiled static binaries
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/htop/htop-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/htop/htop-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/htop/htop-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/htop/htop-x64
+
+# ncursesw - Terminal info files (v6.4) - Required for htop
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ncursesw/ncursesw-arm64.zip
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ncursesw/ncursesw-arm.zip
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ncursesw/ncursesw-x86.zip
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ncursesw/ncursesw-x64.zip
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-arm64
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-arm
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtutor-x86
