@@ -4,7 +4,7 @@
 # @name         Android Environment Installer
 # @namespace    https://github.com/user/mkshrc/
 # @version      1.2
-# @description  Installs mkshrc shell environment, Frida, BusyBox, text editors (nano/vim), and additional binaries on Android devices
+# @description  Installs mkshrc shell environment, Frida, BusyBox, vim text editor, and additional binaries on Android devices
 # @author       user
 # @match        Android
 # ==/UserScript==
@@ -67,10 +67,6 @@ echo '[I] Installing additional utility packages...'
 
 # Install text editors
 echo '[I] Installing text editors...'
-[ -f "$rc_package/$CPU_ABI/nano/nano" ] && {
-  cp -f "$rc_package/$CPU_ABI/nano/nano" "$rc_bin/nano"
-  echo '[I] Nano editor installed'
-}
 [ -f "$rc_package/$CPU_ABI/vim/vim" ] && {
   cp -f "$rc_package/$CPU_ABI/vim/vim" "$rc_bin/vim"
   # Install vimtutor if available
@@ -141,7 +137,6 @@ source "$rc_path"
 
 # Display information about installed editors
 echo '[I] Text editors available:'
-[ -f "$rc_bin/nano" ] && echo '  - nano: Simple text editor (Ctrl+O to save, Ctrl+X to exit)'
 [ -f "$rc_bin/vim" ] && {
   echo '  - vim: Advanced text editor (type :q to quit, :wq to save and quit)'
   [ -f "$rc_bin/vimtutor" ] && echo '  - vimtutor: Interactive vim tutorial'

@@ -3,7 +3,7 @@
 # ==UserScript==
 # @name         mkshrc
 # @namespace    https://github.com/user/mkshrc/
-# @version      1.3
+# @version      1.5
 # @description  Advanced shell environment configuration for Android devices (mksh/sh compatible)
 # @author       user
 # @match        Android
@@ -44,6 +44,8 @@ export USER="$(id -u -n)"                     # Current username
 export LOGNAME="$USER"                        # Ensure LOGNAME matches USER
 export TMPDIR='/data/local/tmp'               # Temporary directory
 export STORAGE='/storage/self/primary'        # Default shared storage (internal)
+
+
 
 ###############################################################################
 # Aliases and Quality of Life Shortcuts
@@ -563,3 +565,5 @@ fi
 
 # Source vim environment variables if available (fixes E1187 error)
 [ -f "$rc_bin/../.vimrc_env" ] && source "$rc_bin/../.vimrc_env"
+
+

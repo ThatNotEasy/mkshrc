@@ -4,3 +4,4 @@
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 build-packages.sh
+markdown/

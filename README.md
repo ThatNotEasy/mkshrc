@@ -96,32 +96,15 @@ To add a binary for a package (e.g., wget):
    ```
 3. **The install.sh script** will automatically detect and install available binaries
 
-## Current Packages
-
-### Core Packages (Included)
-- **busybox** - Multi-call binary with many UNIX utilities
-- **curl** - HTTP/HTTPS client with SSL support
-- **openssl** - SSL/TLS toolkit
-- **frida-server** - Dynamic instrumentation toolkit
-- **supolicy** - SELinux policy manipulation tool
-
-### Additional Packages (Directories Created)
+### Additional Packages
 - **wget** - HTTP/HTTPS/FTP download utility
-- **nano** - Simple text editor
 - **vim** - Advanced text editor
+- **nano** - Simple text editor
 - **htop** - Interactive process viewer
-- **git** - Version control system
-- **rsync** - File synchronization utility
-- **tar** - Archive utility
-- **unzip/zip** - ZIP archive utilities
-- **grep/sed/awk** - Text processing utilities
-- **find** - File search utility
-- **tree** - Directory tree viewer
-- **tmux/screen** - Terminal multiplexers
 
 ## Build Instructions
 
-See [guide/ADDING_PACKAGES.md](guide/ADDING_PACKAGES.md) for detailed instructions on:
+See [markdown/ADDING_PACKAGES.md](markdown/ADDING_PACKAGES.md) for detailed instructions on:
 - Setting up Android NDK
 - Cross-compiling packages
 - Static linking for maximum compatibility
