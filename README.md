@@ -97,9 +97,7 @@ To add a binary for a package (e.g., wget):
 3. **The install.sh script** will automatically detect and install available binaries
 
 ### Additional Packages
-- **wget** - HTTP/HTTPS/FTP download utility
 - **vim** - Advanced text editor
-- **nano** - Simple text editor
 - **htop** - Interactive process viewer
 
 ## Build Instructions
