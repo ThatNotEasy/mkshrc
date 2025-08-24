@@ -1,121 +1,197 @@
-# mkshrc – Android Shell Environment
+# 🐚 MKSHRC
+### Enhanced Android Shell Environment
 
-`mkshrc` provides a more user-friendly shell environment on Android devices. It installs a minimal UNIX-like toolbox (BusyBox, OpenSSL, curl, Frida, supolicy) along with a shell RC script that improves usability.
+[![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
+[![API](https://img.shields.io/badge/API-21%2B-brightgreen.svg)](https://android-arsenal.com/api?level=21)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Features
+*Transform your Android shell experience with a powerful UNIX-like toolbox*
 
-* User-friendly shell interface with `mkshrc`
-* Pre-packaged common tools (BusyBox, curl, OpenSSL, Frida, supolicy)
-* Auto-symlinks for BusyBox applets
-* Certificate injection helper (`update-ca-certificate`)
-* Works on both rooted and non-rooted devices
+</div>
 
-## Included Binaries
+---
 
-| Binary       | Version                   | Notes                    |
-|--------------|---------------------------|--------------------------|
-| BusyBox      | 1.36.1.1                  | Full applet support      |
-| OpenSSL      | 1.1.1l (NDK 23.0.7599858) | Built with Android NDK   |
-| curl         | 7.78.0 (NDK 23.0.7599858) | With SSL support         |
-| frida-server | 17.2.16, 16.7.9           | Choose version as needed |
-| supolicy     | 2.82                      | SELinux policy helper    |
+## 📋 Overview
 
-## Installation
+**mkshrc** provides a comprehensive, user-friendly shell environment for Android devices. It delivers a minimal yet powerful UNIX-like toolbox featuring essential tools like BusyBox, OpenSSL, curl, Git, and Frida, all wrapped in an intelligent shell configuration that dramatically improves usability.
 
-1. Push the installer package to your device:
+## ✨ Key Features
 
-   ```bat
-   adb push package/ /data/local/tmp/package
-   adb push install.sh /data/local/tmp/mkshrc
-   ```
+- 🔧 **Complete Toolbox** - Pre-compiled binaries for all major Android architectures
+- 🚀 **Zero Dependencies** - Statically linked binaries work out-of-the-box
+- 🔐 **Security Tools** - Includes Frida, OpenSSL, and certificate management
+- 📱 **Universal Support** - Works on rooted and non-rooted devices
+- ⚡ **Smart Aliases** - Intuitive shortcuts for common operations
+- 🔄 **Auto-Detection** - Automatically configures based on device capabilities
 
-   or use the included `install.bat`.
+## 📦 Included Tools
 
-2. Open a shell on your device:
+<table>
+<tr>
+<th>🛠️ Tool</th>
+<th>📋 Version</th>
+<th>📝 Description</th>
+</tr>
+<tr>
+<td><strong>BusyBox</strong></td>
+<td>1.36.1.1</td>
+<td>Complete UNIX utilities suite with 300+ applets</td>
+</tr>
+<tr>
+<td><strong>Git</strong></td>
+<td>2.20.1</td>
+<td>Version control with smart aliases and helpers</td>
+</tr>
+<tr>
+<td><strong>OpenSSL</strong></td>
+<td>1.1.1l</td>
+<td>Cryptographic operations and SSL/TLS support</td>
+</tr>
+<tr>
+<td><strong>curl</strong></td>
+<td>7.78.0</td>
+<td>HTTP/HTTPS client with full SSL support</td>
+</tr>
+<tr>
+<td><strong>Frida</strong></td>
+<td>17.2.16 / 16.7.9</td>
+<td>Dynamic instrumentation and reverse engineering</td>
+</tr>
+<tr>
+<td><strong>supolicy</strong></td>
+<td>2.82</td>
+<td>SELinux policy manipulation and management</td>
+</tr>
+</table>
 
-   ```sh
-   adb shell
-   ```
+## 🚀 Quick Start
 
-3. Run the installer:
+### 1️⃣ Installation
 
-   ```sh
-   source /data/local/tmp/mkshrc
-   ```
+<details>
+<summary><strong>📱 Method 1: Using ADB (Recommended)</strong></summary>
 
-## Usage
+```bash
+# Push files to device
+adb push package/ /data/local/tmp/package
+adb push install.sh /data/local/tmp/mkshrc
 
-When you open an `adb shell`, you must source the environment:
+# Or use the included batch script
+install.bat
 
-```sh
+# Connect to device and install
+adb shell
 source /data/local/tmp/mkshrc
 ```
 
-* **If the device is rooted**:
-  The script mounts itself permanently, so future shells automatically include it.
+</details>
 
-* **If the device is not rooted**:
-  You must manually `source /data/local/tmp/mkshrc` in each new shell session.
+### 2️⃣ Activation
 
-## Extra Utilities
+```bash
+# Activate the enhanced shell environment
+source /data/local/tmp/mkshrc.sh
 
-* `update-ca-certificate <path>` – install custom CA certificates into the Android system trust store.
-* `restart` – perform a **soft reboot** of the Android framework (required root).
-* `pull <path>` – safely copy a file from the system into `/data/local/tmp/`.
-* `frida {start|status|stop|version}` – manage the Frida server lifecycle.
-* BusyBox applets are symlinked automatically (except `man`).
-
-# Package Directory
-
-This directory contains pre-compiled binaries for different Android architectures.
-
-## Directory Structure
-
-```
-package/
-├── arm64-v8a/          # 64-bit ARM (most modern Android devices)
-├── armeabi-v7a/        # 32-bit ARM (older Android devices)  
-├── x86/                # 32-bit x86 (Android emulators)
-├── x86_64/             # 64-bit x86 (Android emulators, some tablets)
-├── mkshrc.sh           # Main shell configuration script
-├── source.txt          # Source URLs for all packages
-└── update-ca-certificate.sh  # CA certificate update script
+# Or add to your shell profile for automatic loading
+echo 'source /data/local/tmp/mkshrc.sh' >> ~/.bashrc
 ```
 
-## Adding Binaries
+### 3️⃣ Device Compatibility
 
-To add a binary for a package (e.g., wget):
+<div align="left">
 
-1. **Compile the binary** for Android using Android NDK
-2. **Place the binary** in the appropriate architecture directory:
-   ```
-   package/arm64-v8a/wget/wget
-   package/armeabi-v7a/wget/wget
-   package/x86/wget/wget
-   package/x86_64/wget/wget
-   ```
-3. **The install.sh script** will automatically detect and install available binaries
+| 🔐 Device Type | 🚀 Auto-Load | 🛠️ Functionality | 📝 Notes |
+|----------------|---------------|-------------------|----------|
+| **Rooted** | ✅ Automatic | 🟢 Full Access | Permanent installation |
+| **Non-Rooted** | ❌ Manual | 🟡 Limited | Requires manual sourcing |
 
-### Additional Packages
-- **vim** - Advanced text editor
-- **htop** - Interactive process viewer
+</div>
 
-## Build Instructions
+### 📜 Extra Utilities
 
-See [markdown/ADDING_PACKAGES.md](markdown/ADDING_PACKAGES.md) for detailed instructions on:
-- Setting up Android NDK
-- Cross-compiling packages
-- Static linking for maximum compatibility
-- Testing on Android devices
+- 🔐 **`update-ca-certificate <path>`** – Install custom CA certificates into Android system trust store
+- 🔄 **`restart`** – Perform soft reboot of Android framework (requires root)
+- 📁 **`pull <path>`** – Safely copy files from system to `/data/local/tmp/`
+- 🔍 **`frida {start|status|stop|version}`** – Manage Frida server lifecycle
+- 🔗 **BusyBox applets** – Automatically symlinked (except `man`)
 
-## Notes
+## 🏗️ Architecture Support
 
-- Binaries must be compiled for Android using Android NDK
-- Static linking is recommended for maximum compatibility
-- All binaries should target minimum API level 21 (Android 5.0)
-- Test on actual devices, not just emulators
-- Strip binaries to reduce size: `strip binary_name`
+<div align="left">
 
-## Disclaimer
+| 🏛️ Architecture | 📱 Target Devices | ✅ Status |
+|-----------------|-------------------|-----------|
+| **arm64-v8a** | Modern Android devices (64-bit ARM) | Fully Supported |
+| **armeabi-v7a** | Older Android devices (32-bit ARM) | Fully Supported |
+| **x86** | Android emulators (32-bit x86) | Fully Supported |
+| **x86_64** | Android emulators (64-bit x86) | Fully Supported |
 
-This project is intended for **educational and debugging purposes only**. Using these tools may modify your Android device. Proceed at your own risk.
+</div>
+
+## 📁 Package Structure
+
+```
+📦 package/
+├── 🏗️ arm64-v8a/              # 64-bit ARM (most modern devices)
+│   ├── busybox/
+│   ├── git/
+│   ├── openssl/
+│   └── curl/
+├── 🏗️ armeabi-v7a/            # 32-bit ARM (older devices)
+├── 🏗️ x86/                    # 32-bit x86 (emulators)
+├── 🏗️ x86_64/                 # 64-bit x86 (emulators)
+├── 📜 mkshrc.sh               # Main shell configuration
+├── 📋 source.txt              # Source URLs for packages
+└── 🔐 update-ca-certificate.sh # CA certificate updater
+```
+
+## 🔨 Adding New Packages
+
+### 🛠️ Development Guidelines
+- **[📦 Adding Packages](markdown/ADDING_PACKAGES.md)** - Complete guide for adding new tools
+- **Android NDK Setup** - Cross-compilation environment
+- **Static Linking** - Maximum compatibility across devices
+- **API Level 21+** - Target Android 5.0 and above
+- **Testing Procedures** - Validation on real devices
+- **Binary Optimization** - Size reduction with `strip`
+
+### 🔧 Available Packages
+- **🔧 vim** - Advanced text editor with syntax highlighting
+- **📊 htop** - Interactive process viewer and system monitor
+- **📝 git** - Version control system with smart aliases and helpers
+
+---
+
+## ⚠️ Important Notes
+
+<div align="left">
+
+### 🎯 **Educational & Development Use Only**
+
+This project is designed for **educational, debugging, and development purposes**.
+Always test in safe environments and understand the implications of system modifications.
+
+### 🔒 **Security Considerations**
+
+- Review all binaries before deployment
+- Understand root access implications
+- Use appropriate security measures
+- Keep tools updated for security patches
+
+</div>
+
+---
+
+<div align="left">
+
+### 🌟 **Contributing**
+
+We welcome contributions! Please read our guidelines and submit pull requests.
+
+### 📄 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Made with ❤️ for the Android development community**
+
+</div>

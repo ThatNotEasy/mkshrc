@@ -186,6 +186,80 @@ cp htop package/arm64-v8a/htop/htop
 adb shell "source /data/local/tmp/mkshrc && htop"
 ```
 
+## Example: Adding Git
+
+Here's how git was added to the mkshrc environment:
+
+1. **Create directories:**
+```bash
+mkdir -p package/arm64-v8a/git
+mkdir -p package/armeabi-v7a/git
+mkdir -p package/x86/git
+mkdir -p package/x86_64/git
+```
+
+2. **Download pre-compiled binaries:**
+```bash
+# Download from Zackptg5's Cross-Compiled-Binaries-Android repository
+wget https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-arm64
+wget https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-arm
+wget https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-x86
+wget https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-x64
+
+# Place in appropriate directories
+cp git-arm64 package/arm64-v8a/git/git
+cp git-arm package/armeabi-v7a/git/git
+cp git-x86 package/x86/git/git
+cp git-x64 package/x86_64/git/git
+```
+
+3. **Update install.sh:**
+```bash
+# Install git version control system
+[ -f "$rc_package/$PACKAGE_ABI/git/git" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/git/git" "$rc_bin/git"
+  echo '[I] Git version control system installed'
+
+  # Install additional git utilities if available
+  [ -f "$rc_package/$PACKAGE_ABI/git/git-upload-pack" ] && cp -f "$rc_package/$PACKAGE_ABI/git/git-upload-pack" "$rc_bin/git-upload-pack"
+  [ -f "$rc_package/$PACKAGE_ABI/git/git-receive-pack" ] && cp -f "$rc_package/$PACKAGE_ABI/git/git-receive-pack" "$rc_bin/git-receive-pack"
+  [ -f "$rc_package/$PACKAGE_ABI/git/git-shell" ] && cp -f "$rc_package/$PACKAGE_ABI/git/git-shell" "$rc_bin/git-shell"
+}
+```
+
+4. **Update mkshrc.sh with aliases:**
+```bash
+# Git aliases and shortcuts (if git is available)
+_exist git && {
+  alias gs='git status'
+  alias ga='git add'
+  alias gc='git commit'
+  alias gp='git push'
+  alias gl='git pull'
+  alias gd='git diff'
+  alias gb='git branch'
+  alias gco='git checkout'
+  alias glog='git log --oneline --graph --decorate'
+  alias gstash='git stash'
+  alias gunstash='git stash pop'
+}
+```
+
+5. **Update source.txt:**
+```
+# git - Version control system (v2.41.0) - Cross-compiled static binaries
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/git/git-x64
+```
+
+6. **Test:**
+```bash
+./deploy.sh
+adb shell "source /data/local/tmp/mkshrc && git --version"
+```
+
 ## Tips
 
 - Start with simple packages (single binary, no dependencies)
