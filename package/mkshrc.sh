@@ -85,6 +85,21 @@ _exist nc || alias nc='netcat'
 # Alias su to fakeroot for convenient fake root access
 alias su='fakeroot'
 
+# Git aliases and shortcuts (if git is available)
+_exist git && {
+  alias gs='git status'
+  alias ga='git add'
+  alias gc='git commit'
+  alias gp='git push'
+  alias gl='git pull'
+  alias gd='git diff'
+  alias gb='git branch'
+  alias gco='git checkout'
+  alias glog='git log --oneline --graph --decorate'
+  alias gstash='git stash'
+  alias gunstash='git stash pop'
+}
+
 # Use ps -A if it shows more processes than default ps
 [ "$(ps -A | wc -l)" -gt 1 ] && alias ps='ps -A'
 
@@ -120,6 +135,56 @@ pull() {
   echo "Pulled: $tmp_path"
 }
 export pull
+
+# Git helper function for quick repository status
+gitinfo() {
+  _exist git || {
+    echo 'git command not found' >&2
+    return 1
+  }
+
+  # Check if we're in a git repository
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    echo 'Not in a git repository' >&2
+    return 1
+  fi
+
+  echo "=== Git Repository Information ==="
+  echo "Repository: $(basename "$(git rev-parse --show-toplevel)")"
+  echo "Branch: $(git branch --show-current 2>/dev/null || echo 'detached HEAD')"
+  echo "Remote: $(git remote get-url origin 2>/dev/null || echo 'no remote')"
+  echo
+  echo "=== Status ==="
+  git status --short
+  echo
+  echo "=== Recent Commits ==="
+  git log --oneline -5 2>/dev/null || echo 'No commits yet'
+}
+export gitinfo
+
+# Git clone with progress and error handling
+gitclone() {
+  _exist git || {
+    echo 'git command not found' >&2
+    return 1
+  }
+
+  if [ $# -eq 0 ]; then
+    echo 'Usage: gitclone <repository-url> [directory]' >&2
+    return 1
+  fi
+
+  local repo_url="$1"
+  local target_dir="$2"
+
+  echo "Cloning repository: $repo_url"
+  if [ -n "$target_dir" ]; then
+    git clone --progress "$repo_url" "$target_dir"
+  else
+    git clone --progress "$repo_url"
+  fi
+}
+export gitclone
 
 restart() {
   # Magisk & other root managers rely on overlayfs or tmpfs mounts that insert or hide su binaries and management files at boot.

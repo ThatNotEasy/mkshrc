@@ -4,7 +4,7 @@
 # @name         Android Environment Installer
 # @namespace    https://github.com/user/mkshrc/
 # @version      1.2
-# @description  Installs mkshrc shell environment, Frida, BusyBox, vim text editor, htop process viewer, and additional binaries on Android devices
+# @description  Installs mkshrc shell environment, Frida, BusyBox, vim text editor, htop process viewer, git version control, and additional binaries on Android devices
 # @author       user
 # @match        Android
 # ==/UserScript==
@@ -103,6 +103,41 @@ cp -f "$rc_package/$PACKAGE_ABI/openssl/openssl" "$rc_bin/openssl" 2>/dev/null |
 echo '[I] Installing additional utility packages...'
 [ -f "$rc_package/$PACKAGE_ABI/wget/wget" ] && cp -f "$rc_package/$PACKAGE_ABI/wget/wget" "$rc_bin/wget"
 
+# Install git version control system
+[ -f "$rc_package/$PACKAGE_ABI/git/git" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/git/git" "$rc_bin/git"
+
+  # Install git shared libraries if available
+  if [ -d "$rc_package/$PACKAGE_ABI/git/lib" ]; then
+    mkdir -p "$rc_bin/../lib"
+    cp -f "$rc_package/$PACKAGE_ABI/git/lib"/* "$rc_bin/../lib/" 2>/dev/null || true
+    echo '[I] Git version control system installed with shared libraries'
+  else
+    echo '[I] Git version control system installed'
+  fi
+
+  # Create git wrapper script if libraries are present
+  if [ -d "$rc_bin/../lib" ] && [ "$(ls -A "$rc_bin/../lib" 2>/dev/null)" ]; then
+    cat > "$rc_bin/git-wrapper" << 'EOF'
+#!/system/bin/sh
+# Git wrapper script to handle shared library dependencies
+
+# Set library path for git dependencies
+export LD_LIBRARY_PATH="/data/local/tmp/lib:$LD_LIBRARY_PATH"
+
+# Execute git with proper library path
+exec /data/local/tmp/bin/git "$@"
+EOF
+    chmod +x "$rc_bin/git-wrapper"
+    echo '[I] Git wrapper script created for library dependencies'
+  fi
+
+  # Install additional git utilities if available
+  [ -f "$rc_package/$PACKAGE_ABI/git/git-upload-pack" ] && cp -f "$rc_package/$PACKAGE_ABI/git/git-upload-pack" "$rc_bin/git-upload-pack"
+  [ -f "$rc_package/$PACKAGE_ABI/git/git-receive-pack" ] && cp -f "$rc_package/$PACKAGE_ABI/git/git-receive-pack" "$rc_bin/git-receive-pack"
+  [ -f "$rc_package/$PACKAGE_ABI/git/git-shell" ] && cp -f "$rc_package/$PACKAGE_ABI/git/git-shell" "$rc_bin/git-shell"
+}
+
 # Install text editors and system tools
 echo '[I] Installing text editors and system tools...'
 [ -f "$rc_package/$PACKAGE_ABI/vim/vim" ] && {
@@ -190,6 +225,11 @@ echo '[I] Text editors and system tools available:'
   else
     echo '  - htop: Interactive process viewer (press q to quit)'
   fi
+}
+[ -f "$rc_bin/git" ] && {
+  echo '  - git: Version control system with helpful aliases (gs, ga, gc, gp, gl, etc.)'
+  echo '  - gitinfo: Show repository information'
+  echo '  - gitclone: Enhanced git clone with progress'
 }
 
 # Clean up the deployment package after installation

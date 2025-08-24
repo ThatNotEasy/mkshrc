@@ -43,8 +43,16 @@ https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vimtu
 # htop - Interactive process viewer
 https://github.com/htop-dev/htop/releases/download/3.2.2/htop-3.2.2.tar.xz
 
-# git - Version control system
-https://github.com/git/git/archive/v2.41.0.tar.gz
+# git - Version control system (v2.51.0) - Official Termux packages
+# Binaries extracted from official Termux repository packages
+# Source packages:
+https://packages.termux.org/apt/termux-main/pool/main/g/git/git_2.51.0_aarch64.deb
+https://packages.termux.org/apt/termux-main/pool/main/g/git/git_2.51.0_arm.deb
+https://packages.termux.org/apt/termux-main/pool/main/g/git/git_2.51.0_i686.deb
+https://packages.termux.org/apt/termux-main/pool/main/g/git/git_2.51.0_x86_64.deb
+
+# git - Version control system (source for custom compilation)
+https://github.com/git/git/archive/v2.51.0.tar.gz
 
 # rsync - File synchronization utility
 https://download.samba.org/pub/rsync/src/rsync-3.2.7.tar.gz
