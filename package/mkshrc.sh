@@ -82,9 +82,6 @@ _exist ip && {
 _exist ss || alias ss='netstat'
 _exist nc || alias nc='netcat'
 
-# Alias su to fakeroot for convenient fake root access
-alias su='fakeroot'
-
 # Git aliases and shortcuts (if git is available)
 _exist git && {
   alias gs='git status'

@@ -17,7 +17,7 @@ _exist() {
 # Configurations
 TMPDIR='/data/local/tmp'
 CPU_ABI="$(getprop ro.product.cpu.abi)"
-FRIDA=${1:-'16.7.19'} # Default Frida version if not provided
+FRIDA=${1:-'17.2.16'} # Default Frida version if not provided
 
 rc_package="$TMPDIR/package" # Source package folder
 rc_bin="$TMPDIR/bin"         # Destination folder for binaries
@@ -101,8 +101,6 @@ cp -f "$rc_package/$PACKAGE_ABI/openssl/openssl" "$rc_bin/openssl" 2>/dev/null |
 
 # Install additional utility packages
 echo '[I] Installing additional utility packages...'
-[ -f "$rc_package/$PACKAGE_ABI/wget/wget" ] && cp -f "$rc_package/$PACKAGE_ABI/wget/wget" "$rc_bin/wget"
-
 # Install git version control system
 [ -f "$rc_package/$PACKAGE_ABI/git/git" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/git/git" "$rc_bin/git"
@@ -178,15 +176,6 @@ echo '[I] Installing text editors and system tools...'
   else
     echo '[I] Htop process viewer installed'
   fi
-}
-
-# Install system administration tools
-[ -f "$rc_package/$PACKAGE_ABI/sudo/sudo" ] && cp -f "$rc_package/$PACKAGE_ABI/sudo/sudo" "$rc_bin/sudo"
-[ -f "$rc_package/$PACKAGE_ABI/fakeroot/fakeroot" ] && {
-    cp -f "$rc_package/$PACKAGE_ABI/fakeroot/fakeroot" "$rc_bin/fakeroot"
-    # Copy fakeroot daemon and library (needed for real fakeroot)
-    [ -f "$rc_package/$PACKAGE_ABI/fakeroot/faked" ] && cp -f "$rc_package/$PACKAGE_ABI/fakeroot/faked" "$rc_bin/faked"
-    [ -f "$rc_package/$PACKAGE_ABI/fakeroot/libfakeroot-0.so" ] && cp -f "$rc_package/$PACKAGE_ABI/fakeroot/libfakeroot-0.so" "$rc_bin/libfakeroot-0.so"
 }
 
 # Install script for adding root trust CA certificates
