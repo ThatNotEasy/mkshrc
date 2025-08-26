@@ -25,6 +25,9 @@ echo.
 
 dos2unix install.sh
 dos2unix package/mkshrc.sh
+echo.
+echo [OK] Success converting
+echo.
 
 adb shell rm -rf /data/local/tmp/bin /data/local/tmp/mkshrc /system/etc/bin /vendor/etc/bin /data/local/tmp/package /data/local/tmp/mkshrc
 adb shell mkdir -p /data/local/tmp/package
@@ -37,7 +40,8 @@ adb push install.sh /data/local/tmp/mkshrc
 
 echo.
 echo [OK] Deployment completed successfully
-echo [OK] Please run and execute the following commands:
-echo      1. adb shell
-echo      2. source /data/local/tmp/mkshrc
+echo [OK] Now you're in adb shell. Please run and execute the following commands:
+echo      $ source /data/local/tmp/mkshrc
 echo.
+
+adb shell
