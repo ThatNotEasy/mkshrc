@@ -1,4 +1,4 @@
-﻿#!/system/bin/sh
+#!/system/bin/sh
 
 # ==UserScript==
 # @name         Android Environment Installer
@@ -50,7 +50,7 @@ esac
   echo "[E] Package directory not found for architecture: $PACKAGE_ABI"
   echo "[E] Expected directory: $rc_package/$PACKAGE_ABI"
   echo "[I] Available architectures:"
-  ls -1 "$rc_package/" | grep -E '^(arm|x86)' | sed 's/^/[I]   /'
+  ls -1 "$rc_package/" 2>/dev/null | grep -E '^(arm|x86)' | sed 's/^/[I]   /'
   exit 1
 }
 
@@ -60,25 +60,23 @@ rm -rf "$rc_bin"
 mkdir -p "$rc_bin"
 
 # Provide supolicy fallback (used in Magisk contexts)
-# https://download.chainfire.eu/1220/SuperSU/
 _exist supolicy || {
   echo '[I] Installing supolicy binaries...'
-  # https://www.synacktiv.com/en/offers/trainings/android-for-security-engineers
   cp -f "$rc_package/$PACKAGE_ABI/supolicy/supolicy" "$rc_bin/supolicy" 2>/dev/null || echo "[W] supolicy not found for $PACKAGE_ABI"
   cp -f "$rc_package/$PACKAGE_ABI/supolicy/libsupol.so" "$rc_bin/libsupol.so" 2>/dev/null || echo "[W] libsupol.so not found for $PACKAGE_ABI"
 }
 
 # Install specific Frida server version for the device's CPU ABI
-# https://github.com/frida/frida/
 echo "[I] Installing Frida server version $FRIDA for $CPU_ABI..."
-frida=$(find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-$FRIDA*android-*")
+frida=$(find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-$FRIDA*android-*" 2>/dev/null | head -n 1)
 
 if [ -z "$frida" ]; then
   echo "[W] Frida version $FRIDA not available for $PACKAGE_ABI"
   echo "[I] Available Frida versions:"
-  find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-*" 2>/dev/null | sed 's/.*frida-server-/[I]   /' | sed 's/-android.*//' | sort -u
+  find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-*" 2>/dev/null | sed 's/.*frida-server-//' | sed 's/-android.*//' | sort -u | sed 's/^/[I]   /'
 else
   cp -f "$frida" "$rc_bin/frida-server"
+  chmod +x "$rc_bin/frida-server"
   echo "[I] Installed: $(basename "$frida")"
 fi
 
@@ -92,18 +90,18 @@ else
 fi
 
 # Install additional CPU ABI-specific binaries
-# https://github.com/topjohnwu/magisk-files/
 echo '[I] Installing additional binaries...'
 cp -f "$rc_package/$PACKAGE_ABI/busybox/libbusybox.so" "$rc_bin/busybox" 2>/dev/null || echo "[W] busybox not found for $PACKAGE_ABI"
-# https://appuals.com/install-curl-openssl-android/
 cp -f "$rc_package/$PACKAGE_ABI/curl/curl" "$rc_bin/curl" 2>/dev/null || echo "[W] curl not found for $PACKAGE_ABI"
 cp -f "$rc_package/$PACKAGE_ABI/openssl/openssl" "$rc_bin/openssl" 2>/dev/null || echo "[W] openssl not found for $PACKAGE_ABI"
 
 # Install additional utility packages
 echo '[I] Installing additional utility packages...'
+
 # Install git version control system
 [ -f "$rc_package/$PACKAGE_ABI/git/git" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/git/git" "$rc_bin/git"
+  chmod +x "$rc_bin/git"
 
   # Install git shared libraries if available
   if [ -d "$rc_package/$PACKAGE_ABI/git/lib" ]; then
@@ -140,6 +138,8 @@ EOF
 echo '[I] Installing text editors and system tools...'
 [ -f "$rc_package/$PACKAGE_ABI/vim/vim" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/vim/vim" "$rc_bin/vim"
+  chmod +x "$rc_bin/vim"
+  
   # Install vimtutor if available
   [ -f "$rc_package/$PACKAGE_ABI/vim/vimtutor" ] && cp -f "$rc_package/$PACKAGE_ABI/vim/vimtutor" "$rc_bin/vimtutor"
 
@@ -163,6 +163,7 @@ echo '[I] Installing text editors and system tools...'
 # Install htop process viewer
 [ -f "$rc_package/$PACKAGE_ABI/htop/htop" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/htop/htop" "$rc_bin/htop"
+  chmod +x "$rc_bin/htop"
 
   # Install ncursesw terminfo files required for htop
   if [ -d "$rc_package/$PACKAGE_ABI/htop/usr/share" ]; then
@@ -179,28 +180,38 @@ echo '[I] Installing text editors and system tools...'
 }
 
 # Install script for adding root trust CA certificates
-cp "$rc_package/update-ca-certificate.sh" "$rc_bin/update-ca-certificate"
+[ -f "$rc_package/update-ca-certificate.sh" ] && {
+  cp "$rc_package/update-ca-certificate.sh" "$rc_bin/update-ca-certificate"
+  chmod +x "$rc_bin/update-ca-certificate"
+}
 
 # Set ownership and permissions for installed binaries to ensure accessibility
 chown -R shell:shell "$rc_bin"
-chmod -R 777 "$rc_bin"
+chmod -R 755 "$rc_bin"
 
 # Set up BusyBox command symlinks for all available applets except 'man'
 echo '[I] Setting up BusyBox commands...'
-busybox="$rc_bin/busybox"
-for applet in $("$busybox" --list | grep -vE '^man$'); do
-  _exist "$applet" || ln -s "$busybox" "$rc_bin/$applet"
-done
+if [ -f "$rc_bin/busybox" ]; then
+  busybox="$rc_bin/busybox"
+  chmod +x "$busybox"
+  for applet in $("$busybox" --list | grep -vE '^man$'); do
+    _exist "$applet" || ln -s "$busybox" "$rc_bin/$applet"
+  done
+else
+  echo '[W] BusyBox not available for setting up applets'
+fi
 
 # Install RC script to configure shell environment
 rc_path="$TMPDIR/mkshrc"
-rm "$rc_path"
-cp -f "$rc_package/mkshrc.sh" "$rc_path"
-echo "[I] RC script installed at $rc_path"
-
-# Load RC script to configure shell environment
-echo '[I] Loading shell environment...'
-source "$rc_path"
+rm -f "$rc_path"
+[ -f "$rc_package/mkshrc.sh" ] && {
+  cp -f "$rc_package/mkshrc.sh" "$rc_path"
+  echo "[I] RC script installed at $rc_path"
+  
+  # Load RC script to configure shell environment
+  echo '[I] Loading shell environment...'
+  . "$rc_path"
+}
 
 # Display information about installed tools
 echo '[I] Text editors and system tools available:'

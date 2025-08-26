@@ -23,7 +23,10 @@ if not defined ABI (
 echo [OK] Device ABI: %ABI%
 echo.
 
-adb shell rm -rf /data/local/tmp/bin /data/local/tmp/mkshrc /system/etc/bin /vendor/etc/bin /data/local/tmp/package
+dos2unix install.sh
+dos2unix package/mkshrc.sh
+
+adb shell rm -rf /data/local/tmp/bin /data/local/tmp/mkshrc /system/etc/bin /vendor/etc/bin /data/local/tmp/package /data/local/tmp/mkshrc
 adb shell mkdir -p /data/local/tmp/package
 
 adb push package/%ABI%/ /data/local/tmp/package/

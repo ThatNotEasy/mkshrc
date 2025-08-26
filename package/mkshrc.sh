@@ -1,4 +1,4 @@
-﻿#!/system/bin/sh
+#!/system/bin/sh
 
 # ==UserScript==
 # @name         mkshrc
@@ -81,6 +81,8 @@ _exist ip && {
 # Fallbacks for common tools if not present
 _exist ss || alias ss='netstat'
 _exist nc || alias nc='netcat'
+
+
 
 # Git aliases and shortcuts (if git is available)
 _exist git && {
@@ -934,5 +936,3 @@ echo "[I] Enhanced cd command supports case-insensitive directory names"
 
 # Source htop environment variables if available (sets TERMINFO for proper display)
 [ -f "$rc_bin/../.htoprc_env" ] && source "$rc_bin/../.htoprc_env"
-
-
