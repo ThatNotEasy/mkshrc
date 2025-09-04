@@ -86,3 +86,8 @@ https://github.com/tmux/tmux/releases/download/3.3a/tmux-3.3a.tar.gz
 
 # screen - Terminal session manager
 https://ftp.gnu.org/gnu/screen/screen-4.9.0.tar.gz
+
+https://github.com/extremecoders-re/tcpdump-android-builds/files/2734354/tcpdump-x86.zip
+https://github.com/extremecoders-re/tcpdump-android-builds/files/2734355/tcpdump-x86_64.zip
+https://github.com/extremecoders-re/tcpdump-android-builds/files/2734352/tcpdump-arm.zip
+https://github.com/extremecoders-re/tcpdump-android-builds/files/2734353/tcpdump-arm64.zip

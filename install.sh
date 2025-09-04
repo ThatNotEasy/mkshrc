@@ -162,6 +162,15 @@ cp -f "$rc_package/$PACKAGE_ABI/openssl/openssl" "$rc_bin/openssl" 2>/dev/null |
 _success "Core utilities installed"
 
 # =============================================================================
+# TCPDUMP NETWORK PACKET ANALYZER
+# =============================================================================
+_step "Installing tcpdump network packet analyzer..."
+
+cp -f "$rc_package/$PACKAGE_ABI/tcpdump/tcpdump" "$rc_bin/tcpdump" 2>/dev/null || _warning "tcpdump not found for $PACKAGE_ABI"
+
+_success "tcpdump installed"
+
+# =============================================================================
 # GIT VERSION CONTROL SYSTEM
 # =============================================================================
 _step "Installing Git version control system..."
@@ -319,6 +328,8 @@ _info "Available tools:"
 [ -f "$rc_bin/openssl" ] && _highlight "  ✦ openssl - Cryptography toolkit"
 [ -f "$rc_bin/frida-server" ] && _highlight "  ✦ frida-server - Dynamic instrumentation"
 [ -f "$rc_bin/busybox" ] && _highlight "  ✦ busybox - Unix utilities collection"
+
+[ -f "$rc_bin/tcpdump" ] && _highlight "  ✦ tcpdump - Network packet analyzer"
 
 # =============================================================================
 # CLEANUP AND COMPLETION
