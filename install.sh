@@ -170,6 +170,7 @@ cp -f "$rc_package/$PACKAGE_ABI/tcpdump/tcpdump" "$rc_bin/tcpdump" 2>/dev/null |
 
 _success "tcpdump installed"
 
+
 # =============================================================================
 # GIT VERSION CONTROL SYSTEM
 # =============================================================================
@@ -240,6 +241,13 @@ _step "Installing text editors and system tools..."
   _success "Vim editor installed (with vimtutor and configuration)"
 }
 
+# vi - Simple text editor from BusyBox
+[ -f "$rc_package/$PACKAGE_ABI/vi/vi" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/vi/vi" "$rc_bin/vi"
+  chmod +x "$rc_bin/vi"
+  _success "Vi editor installed"
+}
+
 # htop - Interactive process viewer and system monitor
 [ -f "$rc_package/$PACKAGE_ABI/htop/htop" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/htop/htop" "$rc_bin/htop"
@@ -284,12 +292,13 @@ if [ -f "$rc_bin/busybox" ]; then
   busybox="$rc_bin/busybox"
   chmod +x "$busybox"
   for applet in $("$busybox" --list | grep -vE '^man$'); do
-    _exist "$applet" || ln -s "$busybox" "$rc_bin/$applet"
+    [ -f "$rc_bin/$applet" ] || ln -s "$busybox" "$rc_bin/$applet" 2>/dev/null || true
   done
   _success "BusyBox applets configured"
 else
   _warning "BusyBox not available for setting up applets"
 fi
+
 
 # =============================================================================
 # SHELL ENVIRONMENT CONFIGURATION
@@ -316,6 +325,7 @@ _info "Available tools:"
   _highlight "  ✦ vim - Advanced text editor (:q to quit, :wq to save)"
   [ -f "$rc_bin/vimtutor" ] && _highlight "  ✦ vimtutor - Interactive tutorial (run: vimtutor)"
 }
+[ -f "$rc_bin/vi" ] && _highlight "  ✦ vi - Simple text editor (from BusyBox)"
 [ -f "$rc_bin/htop" ] && {
   _highlight "  ✦ htop - Interactive process viewer (q to quit, F1 for help)"
 }

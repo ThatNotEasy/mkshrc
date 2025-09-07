@@ -533,7 +533,7 @@ rc_bin="$rc_root/bin"
 # Add to PATH if not already there and directory exists
 if [ -d "$rc_bin" ]; then
   echo "$PATH" | grep -q "$rc_bin" || export PATH="$PATH:$rc_bin"
-  echo "[I] Added to PATH: $rc_bin"
+  # Removed PATH log message as requested
 else
   echo "[E] Bin directory does not exist: $rc_bin"
 fi
