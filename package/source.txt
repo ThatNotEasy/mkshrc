@@ -98,3 +98,15 @@ https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_
 https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_arm.deb
 https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_i686.deb
 https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_x86_64.deb
+
+# dropbear - Lightweight SSH client and server - Cross-compiled static binaries for Android
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/dropbear/dbclient-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/dropbear/dbclient-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/dropbear/dbclient-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/dropbear/dbclient-x64
+
+# ngrok - Secure tunnels to localhost - Cross-compiled static binaries for Android
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ngrok/ngrok-arm64
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ngrok/ngrok-arm
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ngrok/ngrok-x86
+https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/ngrok/ngrok-x64

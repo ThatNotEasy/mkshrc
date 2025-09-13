@@ -170,6 +170,36 @@ cp -f "$rc_package/$PACKAGE_ABI/tcpdump/tcpdump" "$rc_bin/tcpdump" 2>/dev/null |
 
 _success "tcpdump installed"
 
+# =============================================================================
+# SSH SECURE SHELL CLIENT AND SERVER
+# =============================================================================
+_step "Installing SSH secure shell utilities..."
+
+# SSH client and related tools
+[ -f "$rc_package/$PACKAGE_ABI/ssh/ssh" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/ssh/ssh" "$rc_bin/ssh"
+  chmod +x "$rc_bin/ssh"
+  _success "SSH client installed"
+}
+
+[ -f "$rc_package/$PACKAGE_ABI/ssh/scp" ] && cp -f "$rc_package/$PACKAGE_ABI/ssh/scp" "$rc_bin/scp"
+[ -f "$rc_package/$PACKAGE_ABI/ssh/sftp" ] && cp -f "$rc_package/$PACKAGE_ABI/ssh/sftp" "$rc_bin/sftp"
+[ -f "$rc_package/$PACKAGE_ABI/ssh/ssh-keygen" ] && cp -f "$rc_package/$PACKAGE_ABI/ssh/ssh-keygen" "$rc_bin/ssh-keygen"
+[ -f "$rc_package/$PACKAGE_ABI/ssh/ssh-keyscan" ] && cp -f "$rc_package/$PACKAGE_ABI/ssh/ssh-keyscan" "$rc_bin/ssh-keyscan"
+[ -f "$rc_package/$PACKAGE_ABI/ssh/sshd" ] && cp -f "$rc_package/$PACKAGE_ABI/ssh/sshd" "$rc_bin/sshd"
+
+_success "SSH utilities installed"
+
+# =============================================================================
+# NGROK SECURE TUNNELS TO LOCALHOST
+# =============================================================================
+_step "Installing Ngrok tunneling tool..."
+
+[ -f "$rc_package/$PACKAGE_ABI/ngrok/ngrok" ] && {
+  cp -f "$rc_package/$PACKAGE_ABI/ngrok/ngrok" "$rc_bin/ngrok"
+  chmod +x "$rc_bin/ngrok"
+  _success "Ngrok installed"
+} || _warning "ngrok not found for $PACKAGE_ABI"
 
 # =============================================================================
 # GIT VERSION CONTROL SYSTEM
@@ -336,6 +366,8 @@ _info "Available tools:"
 [ -f "$rc_bin/busybox" ] && _highlight "  ✦ busybox - Unix utilities collection"
 
 [ -f "$rc_bin/tcpdump" ] && _highlight "  ✦ tcpdump - Network packet analyzer"
+[ -f "$rc_bin/ssh" ] && _highlight "  ✦ ssh - Secure shell client"
+[ -f "$rc_bin/ngrok" ] && _highlight "  ✦ ngrok - Secure tunnels to localhost"
 
 # =============================================================================
 # CLEANUP AND COMPLETION
