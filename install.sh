@@ -321,18 +321,14 @@ rm -f "$rc_path"
 # =============================================================================
 echo ""
 _info "Available tools:"
-[ -f "$rc_bin/vim" ] && {
-  _highlight "  ✦ vim - Advanced text editor (:q to quit, :wq to save)"
-  [ -f "$rc_bin/vimtutor" ] && _highlight "  ✦ vimtutor - Interactive tutorial (run: vimtutor)"
-}
+[ -f "$rc_bin/vim" ] && _highlight "  ✦ vim - Advanced text editor (:q to quit, :wq to save)"
 [ -f "$rc_bin/vi" ] && _highlight "  ✦ vi - Simple text editor (from BusyBox)"
 [ -f "$rc_bin/htop" ] && {
   _highlight "  ✦ htop - Interactive process viewer (q to quit, F1 for help)"
 }
 [ -f "$rc_bin/git" ] && {
   _highlight "  ✦ git - Version control system"
-  _highlight "  ✦ gitinfo - Repository information"
-  _highlight "  ✦ gitclone - Enhanced cloning"
+
 }
 [ -f "$rc_bin/curl" ] && _highlight "  ✦ curl - Data transfer tool"
 [ -f "$rc_bin/openssl" ] && _highlight "  ✦ openssl - Cryptography toolkit"

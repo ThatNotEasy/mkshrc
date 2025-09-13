@@ -17,7 +17,6 @@ https://github.com/robertying/openssl-curl-android/releases/download/1.1.1l-7.78
 https://ftp.gnu.org/gnu/wget/wget-1.21.4.tar.gz
 
 
-
 # vim - Advanced text editor (v9.1.0143) - Cross-compiled static binaries
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-arm64
 https://github.com/Zackptg5/Cross-Compiled-Binaries-Android/raw/master/vim/vim-arm
@@ -91,3 +90,11 @@ https://github.com/extremecoders-re/tcpdump-android-builds/files/2734354/tcpdump
 https://github.com/extremecoders-re/tcpdump-android-builds/files/2734355/tcpdump-x86_64.zip
 https://github.com/extremecoders-re/tcpdump-android-builds/files/2734352/tcpdump-arm.zip
 https://github.com/extremecoders-re/tcpdump-android-builds/files/2734353/tcpdump-arm64.zip
+
+# hexdump - Hexadecimal dumper from GNU coreutils (v9.5) - Official Termux packages
+# Binaries extracted from official Termux repository packages
+# Source packages (extract usr/bin/hexdump from each deb):
+https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_aarch64.deb
+https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_arm.deb
+https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_i686.deb
+https://packages.termux.org/apt/termux-main/pool/main/c/coreutils/coreutils_9.5_x86_64.deb

@@ -604,29 +604,39 @@ fi
 if [ "$color_prompt" = yes ]; then
   PS1='${|
   local e=$?
-
+ 
   # Show exit code if non-zero with red background
   (( e )) && REPLY+="${RESET}${WHITE}${RED} ${e} ${RESET} "
-
+ 
   return $e
 }${BRIGHT_WHITE}[${BRIGHT_YELLOW}$(date "+%H:%M:%S")${BRIGHT_WHITE}]${symbol_color}${prompt_symbol} ${user_color}${USER}${WHITE}@${host_color}${HOSTNAME} ${WHITE}in ${BRIGHT_CYAN}${|
-  # Show current directory name only (like Parrot OS)
-  local dir="${PWD##*/}"
-  [ "$PWD" = "$HOME" ] && REPLY="~" || REPLY="${dir:-/}"
+  # Show full relative path for subdirectories
+  if [ "$PWD" = "$HOME" ]; then
+    REPLY="~"
+  elif echo "$PWD" | grep -q "^$HOME/"; then
+    REPLY="~/${PWD#"$HOME/"}"
+  else
+    REPLY="$PWD"
+  fi
 }${WHITE}${YELLOW}${ctx_shell:+ (${ctx_shell})}
 ${symbol_color}└─${ctx_type}${RESET} '
 else
   PS1='${|
   local e=$?
-
+ 
   # Show exit code if non-zero
   (( e )) && REPLY+="[${e}] "
-
+ 
   return $e
 }[$(date "+%H:%M:%S")]${USER}@${HOSTNAME} in ${|
-  # Show current directory name only
-  local dir="${PWD##*/}"
-  [ "$PWD" = "$HOME" ] && REPLY="~" || REPLY="${dir:-/}"
+  # Show full relative path for subdirectories
+  if [ "$PWD" = "$HOME" ]; then
+    REPLY="~"
+  elif echo "$PWD" | grep -q "^$HOME/"; then
+    REPLY="~/${PWD#"$HOME/"}"
+  else
+    REPLY="$PWD"
+  fi
 }${ctx_shell:+ (${ctx_shell})}
 └─${ctx_type} '
 fi
@@ -640,288 +650,142 @@ set -o vi-tabcomplete
 set -o emacs
 
 # Case-insensitive directory completion for mksh
-# This creates a more robust solution that works with mksh's completion system
+# Optimized version with better performance and cleaner code
 
 # Function to find case-insensitive directory matches
 _find_case_insensitive_dirs() {
-  local search_path="$1"
-  local search_pattern="$2"
-  local search_dir="."
-
-  # Parse the search path
-  case "$search_path" in
-    */*)
-      search_dir="${search_path%/*}"
-      search_pattern="${search_path##*/}"
-      [ -z "$search_dir" ] && search_dir="/"
-      ;;
-    *)
-      search_pattern="$search_path"
-      ;;
-  esac
-
-  # Ensure search directory exists
-  [ ! -d "$search_dir" ] && return 1
-
-  # Find matching directories
-  local matches=""
-  local entry basename lower_basename lower_pattern
-
-  for entry in "$search_dir"/*; do
-    # Skip if not a directory or if it's . or ..
-    [ ! -d "$entry" ] && continue
-    basename="${entry##*/}"
-    [ "$basename" = "." ] && continue
-    [ "$basename" = ".." ] && continue
-
-    # Convert to lowercase for comparison
-    lower_basename="$(printf '%s' "$basename" | tr '[:upper:]' '[:lower:]')"
-    lower_pattern="$(printf '%s' "$search_pattern" | tr '[:upper:]' '[:lower:]')"
-
-    # Check if basename starts with pattern (case-insensitive)
-    if [ -z "$search_pattern" ] || [ "${lower_basename#$lower_pattern}" != "$lower_basename" ]; then
-      # Build the full path for the match
-      if [ "$search_dir" = "." ]; then
-        matches="$matches$basename/
+    local search_path="$1"
+    local search_dir="." search_pattern="$search_path"
+    
+    # Parse the search path if it contains slashes
+    case "$search_path" in
+        */*)
+            search_dir="${search_path%/*}"
+            search_pattern="${search_path##*/}"
+            [[ -z "$search_dir" ]] && search_dir="/"
+            ;;
+    esac
+    
+    [[ ! -d "$search_dir" ]] && return 1
+    
+    local matches="" entry basename full_path
+    local lower_pattern="$(echo "$search_pattern" | tr '[:upper:]' '[:lower:]')"
+    
+    for entry in "$search_dir"/*; do
+        [[ ! -d "$entry" ]] && continue
+        basename="${entry##*/}"
+        [[ "$basename" = "." || "$basename" = ".." ]] && continue
+        
+        local lower_basename="$(echo "$basename" | tr '[:upper:]' '[:lower:]')"
+        case "$lower_basename" in
+            "$lower_pattern"*)
+                # Build plain full path for insertion, but color for display
+                if [[ "$search_dir" = "." ]]; then
+                    full_path="$basename/"
+                elif [[ "$search_dir" = "/" ]]; then
+                    full_path="/$basename/"
+                else
+                    full_path="$search_dir/$basename/"
+                fi
+                matches="$matches${BRIGHT_CYAN}${full_path}${RESET}
 "
-      elif [ "$search_dir" = "/" ]; then
-        matches="$matches/$basename/
-"
-      else
-        matches="$matches$search_dir/$basename/
-"
-      fi
-    fi
-  done
-
-  printf '%s' "$matches"
+                ;;
+        esac
+    done
+    
+    printf '%s' "$matches"
 }
 
 # Enhanced cd function with case-insensitive completion support
 cd() {
-  # If no arguments, go to home directory
-  if [ $# -eq 0 ]; then
-    builtin cd
-    return $?
-  fi
-
-  local target="$1"
-
-  # If target exists as-is, use it directly
-  if [ -d "$target" ]; then
-    builtin cd "$target"
-    return $?
-  fi
-
-  # Try to find case-insensitive match
-  local dir="${target%/*}"
-  local base="${target##*/}"
-
-  # Default to current directory if no path separator
-  [ "$dir" = "$target" ] && dir="."
-
-  # Look for exact case-insensitive match
-  if [ -d "$dir" ]; then
-    local entry basename lower_basename lower_base
-    for entry in "$dir"/*; do
-      [ ! -d "$entry" ] && continue
-      basename="${entry##*/}"
-      lower_basename="$(printf '%s' "$basename" | tr '[:upper:]' '[:lower:]')"
-      lower_base="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
-
-      # If we find an exact case-insensitive match, use it
-      if [ "$lower_basename" = "$lower_base" ]; then
-        builtin cd "$entry"
-        return $?
-      fi
-    done
-  fi
-
-  # If no case-insensitive match found, try the original target
-  builtin cd "$target"
-}
-
-# Create a completion function that integrates with mksh
-# This function will be called when tab is pressed after 'cd'
-_mksh_complete_cd() {
-  local current_line="$1"
-  local cursor_pos="$2"
-
-  # Extract the current word being completed
-  local words="$current_line"
-  local current_word=""
-
-  # Get the last word from the line
-  current_word="${current_line##* }"
-
-  # Find matches and print them
-  _find_case_insensitive_dirs "$current_word"
-}
-
-# mksh-specific case-insensitive completion setup
-# Override the built-in file completion to be case-insensitive
-_case_insensitive_completion() {
-  # This function hooks into mksh's tab completion system
-  # It modifies the COMP_* variables that mksh uses internally
-
-  # Enable case-insensitive globbing temporarily
-  local old_nocaseglob=$(set +o | grep nocaseglob)
-  set +o nocaseglob 2>/dev/null || true
-
-  # Get the current word being completed
-  local current_word="${COMP_WORDS[COMP_CWORD]:-${words[COMP_CWORD]}}"
-
-  # If it's empty or doesn't exist, use the current command line
-  if [ -z "$current_word" ]; then
-    # Extract the current word from command line
-    local line="${COMP_LINE:-$1}"
-    current_word="${line##* }"
-  fi
-
-  # Handle directory completion for cd command
-  local first_word="${current_line%% *}"
-  if [ "$first_word" = "cd" ]; then
-    local search_dir="."
-    local search_pattern="$current_word"
-
-    # If current word contains a path, split it
-    case "$current_word" in
-      */*)
-        search_dir="${current_word%/*}"
-        search_pattern="${current_word##*/}"
-        [ -z "$search_dir" ] && search_dir="/"
-        ;;
-    esac
-
-    # Find matching directories case-insensitively
-    if [ -d "$search_dir" ]; then
-      local matches=""
-      local entry
-
-      # Use shell globbing with case-insensitive pattern
-      for entry in "$search_dir"/*; do
-        [ ! -d "$entry" ] && continue
-
-        local basename="${entry##*/}"
-        local lower_basename="$(printf '%s\n' "$basename" | tr '[:upper:]' '[:lower:]')"
-        local lower_pattern="$(printf '%s\n' "$search_pattern" | tr '[:upper:]' '[:lower:]')"
-
-        # Check if basename starts with the pattern (case-insensitive)
-        if [ "${lower_basename#$lower_pattern}" != "$lower_basename" ]; then
-          if [ "$search_dir" = "." ]; then
-            matches="$matches$basename/
-"
-          elif [ "$search_dir" = "/" ]; then
-            matches="$matches/$basename/
-"
-          else
-            matches="$matches$search_dir/$basename/
-"
-          fi
-        fi
-      done
-
-      # Print completion results
-      printf '%s' "$matches"
-    fi
-  fi
-
-  # Restore original nocaseglob setting
-  eval "$old_nocaseglob"
-}
-
-# Set up the completion function for mksh
-# This approach works by binding to the tab key
-bind -x '"\t": _case_insensitive_completion' 2>/dev/null || {
-  # Fallback: try to set up completion using mksh's built-in mechanisms
-  # Enable vi-style tab completion with case-insensitive matching
-  set -o vi-tabcomplete
-
-  # Create a simple wrapper for cd that provides case-insensitive completion
-  _cd_with_completion() {
-    if [ $# -eq 0 ]; then
-      cd
-      return $?
-    fi
-
+    # Go to home directory if no arguments
+    (( $# == 0 )) && { builtin cd; return $?; }
+    
     local target="$1"
-
-    # If the target doesn't exist, try to find a case-insensitive match
-    if [ ! -d "$target" ] && [ ! -f "$target" ]; then
-      local dir="${target%/*}"
-      local base="${target##*/}"
-
-      # Default to current directory if no path separator
-      [ "$dir" = "$target" ] && dir="."
-
-      # Look for case-insensitive matches
-      if [ -d "$dir" ]; then
-        local found=""
-        local entry
+    
+    # Use target directly if it exists
+    [[ -d "$target" ]] && { builtin cd "$target"; return $?; }
+    
+    local dir="${target%/*}" base="${target##*/}"
+    [[ "$dir" == "$target" ]] && dir="."
+    
+    # Look for case-insensitive match
+    if [[ -d "$dir" ]]; then
+        local entry basename lower_base="${base,,}"
         for entry in "$dir"/*; do
-          [ ! -d "$entry" ] && continue
-          local basename="${entry##*/}"
-          local lower_basename="$(printf '%s\n' "$basename" | tr '[:upper:]' '[:lower:]')"
-          local lower_base="$(printf '%s\n' "$base" | tr '[:upper:]' '[:lower:]')"
-
-          if [ "$lower_basename" = "$lower_base" ]; then
-            found="$entry"
-            break
-          fi
+            [[ ! -d "$entry" ]] && continue
+            basename="${entry##*/}"
+            [[ "${basename,,}" == "$lower_base" ]] && { builtin cd "$entry"; return $?; }
         done
-
-        # If we found a match, use it
-        [ -n "$found" ] && target="$found"
-      fi
     fi
-
-    cd "$target"
-  }
-
-  # Don't override cd completely, just provide the helper
-  # Users can use _cd_with_completion if they want case-insensitive cd
+    
+    # Fall back to original target
+    builtin cd "$target"
 }
 
-# Set up case-insensitive filename completion globally
-# This affects all tab completion, not just cd
-set +o nocaseglob 2>/dev/null || true
-
-# Enable case-insensitive pattern matching for tab completion
-# This is the most effective way to get case-insensitive completion in mksh
-export FIGNORE=''  # Don't ignore any file extensions
-set -o vi-tabcomplete  # Ensure tab completion is enabled
-
-# Alternative: Create a custom tab completion handler
-# This function will be called for tab completion
-_tab_complete() {
-  local line="$1"
-  local pos="$2"
-
-  # Extract command and current word
-  local cmd="${line%% *}"
-  local current_word="${line##* }"
-
-  # Special handling for cd command
-  if [ "$cmd" = "cd" ]; then
-    local matches
-    matches=$(_find_case_insensitive_dirs "$current_word")
-    if [ -n "$matches" ]; then
-      printf '%s' "$matches"
-      return 0
-    fi
-  fi
-
-  # For other commands, fall back to default completion
-  return 1
+# Main completion function
+_case_insensitive_completion() {
+    local current_line="${COMP_LINE:-$1}" current_word="${COMP_WORDS[COMP_CWORD]}"
+    [[ -z "$current_word" ]] && current_word="${current_line##* }"
+    
+    # Only handle cd command
+    [[ "${current_line%% *}" != "cd" ]] && return 1
+    
+    local search_dir="." search_pattern="$current_word"
+    
+    # Parse path components
+    case "$current_word" in
+        */*)
+            search_dir="${current_word%/*}"
+            search_pattern="${current_word##*/}"
+            [[ -z "$search_dir" ]] && search_dir="/"
+            ;;
+    esac
+    
+    [[ ! -d "$search_dir" ]] && return 1
+    
+    local matches="" entry basename full_path
+    local lower_pattern="$(echo "$search_pattern" | tr '[:upper:]' '[:lower:]')"
+    
+    for entry in "$search_dir"/*; do
+        [[ ! -d "$entry" ]] && continue
+        basename="${entry##*/}"
+        [[ "$basename" = "." || "$basename" = ".." ]] && continue
+        
+        # Use case conversion for comparison (mksh compatible)
+        local lower_basename="$(echo "$basename" | tr '[:upper:]' '[:lower:]')"
+        case "$lower_basename" in
+            "$lower_pattern"*)
+                # Build plain full path for insertion, but color for display
+                if [[ "$search_dir" = "." ]]; then
+                    full_path="$basename/"
+                elif [[ "$search_dir" = "/" ]]; then
+                    full_path="/$basename/"
+                else
+                    full_path="$search_dir/$basename/"
+                fi
+                matches="$matches${BRIGHT_CYAN}${full_path}${RESET}
+"
+                ;;
+        esac
+    done
+    
+    printf '%s' "$matches"
+    return 0
 }
 
-# Try to set up custom completion (this may not work on all mksh versions)
-# The key is that we've enhanced the cd function itself to be case-insensitive
-# So even if tab completion doesn't work perfectly, typing the wrong case and pressing enter will work
+# Set up completion
+if bind -x '"\t": _case_insensitive_completion' 2>/dev/null; then
+    echo "[I] Case-insensitive tab completion enabled for mksh"
+else
+    # Fallback: enhanced cd function still works
+    echo "[I] Enhanced cd with case-insensitive matching enabled"
+    echo "[I] Note: Tab completion may not be case-insensitive"
+fi
 
-echo "[I] Case-insensitive directory completion enabled"
-echo "[I] Type 'cd dir<tab>' to complete 'Directory/' (case-insensitive)"
-echo "[I] Enhanced cd command supports case-insensitive directory names"
+# Clean up environment
+# set +o nocaseglob 2>/dev/null || true
+export FIGNORE=''
 
 ###############################################################################
 # Additional Configurations
