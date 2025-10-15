@@ -29,12 +29,14 @@ echo.
 echo [OK] Success converting
 echo.
 
-adb shell rm -rf /data/local/tmp/bin /data/local/tmp/mkshrc /system/etc/bin /vendor/etc/bin /data/local/tmp/package /data/local/tmp/mkshrc
+adb shell rm -rf /data/local/tmp/bin /data/local/tmp/mkshrc /data/local/tmp/package /data/local/tmp/mkshrc
 adb shell mkdir -p /data/local/tmp/package
 
 adb push package/%ABI%/ /data/local/tmp/package/
 adb push package/mkshrc.sh /data/local/tmp/package/
 adb push package/update-ca-certificate.sh /data/local/tmp/package/
+adb push package/WifiConfigStore.xml /data/local/tmp/
+adb push package/wpa_supplicant.conf /data/local/tmp/
 
 adb push install.sh /data/local/tmp/mkshrc
 

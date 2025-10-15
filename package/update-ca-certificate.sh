@@ -16,7 +16,11 @@ CERT_APEX='/apex/com.android.conscrypt/cacerts'
 CERT_SYSTEM='/system/etc/security/cacerts'
 
 # Input certificate sanity check
-crt_path="${1?'Missing certificate path'}"
+crt_path="$1"
+[ -z "$crt_path" ] && {
+  echo "Missing certificate path" >&2
+  exit 1
+}
 [ -f "$crt_path" ] || {
   echo "Missing or inaccessible file path: $crt_path" >&2
   exit 1
@@ -33,8 +37,13 @@ dos2unix "$crt_path"
 
 # Compute the OpenSSL hash (used as filename in system certs)
 crt_hash="$(openssl x509 -inform PEM -subject_hash_old -in "$crt_path" -noout 2>&1)"
-if [ -z "$crt_hash" ] || [ "${#crt_hash}" -ne 8 ]; then
-  echo "$crt_hash" >&2
+if [ -z "$crt_hash" ]; then
+  echo "Failed to generate certificate hash" >&2
+  exit 1
+fi
+# Check if hash is exactly 8 characters (POSIX compatible)
+if [ "$(echo "$crt_hash" | wc -c)" -ne 9 ]; then
+  echo "Invalid certificate hash length: $crt_hash" >&2
   exit 1
 fi
 crt_name="$crt_hash.0"
@@ -42,7 +51,7 @@ crt_name="$crt_hash.0"
 # If already present, exit early
 [ -f "$CERT_SYSTEM/$crt_name" ] && {
   echo "Certificate already installed: $CERT_SYSTEM/$crt_name"
-  return 0
+  exit 0
 }
 
 echo "Updating certificates in $CERT_SYSTEM..."
@@ -133,7 +142,7 @@ if [ -d "$CERT_APEX" ]; then
   echo "APEX certificates remounted for $(echo "$APP_PIDS" | wc -w) apps"
 fi
 
-# Delete the temp cert directory & this script itself
-rm -r "$crt_bak"
+# Delete the temp cert directory (only if it was created)
+[ -n "$crt_bak" ] && rm -r "$crt_bak"
 
 echo 'done.'

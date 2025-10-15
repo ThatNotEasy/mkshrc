@@ -17,42 +17,52 @@ status=0
 
 # Function to traverse directories recursively
 traverse() {
-  # Increment the directory counter
-  ((dir_count++))
-  local directory="$1"
-  local prefix="$2"
+   # Increment the directory counter
+   dir_count=$((dir_count + 1))
+   local directory="$1"
+   local prefix="$2"
 
-  # Get the last child in the directory
-  local last_child=$(ls -1d "$directory"/* 2>/dev/null | tail -n 1)
-  # [ -z "$last_child" ] && return;
+   # Get list of children, handling empty directories
+   local children=""
+   if [ -d "$directory" ] && [ "$(ls -A "$directory" 2>/dev/null)" ]; then
+     children=$(ls -1d "$directory"/* 2>/dev/null)
+   fi
 
-  # Loop through each item in the directory
-  for child in "$directory"/*; do
-    local child_prefix='│   '
-    local pointer='├── '
+   # Get the last child in the directory
+   local last_child=$(echo "$children" | tail -n 1)
 
-    # Check if the current child is the last one in the directory
-    if [ "$child" == "$last_child" -o -z "$last_child" ]; then
-      pointer='└── '
-      child_prefix='    '
-    fi
+   # Loop through each item in the directory
+   echo "$children" | while IFS= read -r child; do
+     [ -z "$child" ] && continue
 
-    # Display the current child with the tree structure
-    local display="${prefix}${pointer}${child##*/}"
-    # If the child is a symbolic link, append the target path
-    [ -L "$child" ] && display+=" -> $(readlink "$child")"
-    echo "$display"
+     local child_prefix='│   '
+     local pointer='├── '
 
-    # If child is a directory, recurse into it
-    if [ -d "$child" ]; then
-      # Skip symbolic links to directories
-      [ ! -L "$child" ] && traverse "$child" "${prefix}$child_prefix" || ((dir_count++))
-    elif [ -e "$child" ]; then
-      # Increment the file counter
-      ((file_count++))
-    fi
+     # Check if the current child is the last one in the directory
+     if [ "$child" = "$last_child" ] || [ -z "$last_child" ]; then
+       pointer='└── '
+       child_prefix='    '
+     fi
 
-  done
+     # Display the current child with the tree structure
+     local display="${prefix}${pointer}${child##*/}"
+     # If the child is a symbolic link, append the target path
+     [ -L "$child" ] && display+=" -> $(readlink "$child")"
+     echo "$display"
+
+     # If child is a directory, recurse into it
+     if [ -d "$child" ]; then
+       # Skip symbolic links to directories to avoid infinite loops
+       if [ ! -L "$child" ]; then
+         traverse "$child" "${prefix}$child_prefix"
+       else
+         dir_count=$((dir_count + 1))
+       fi
+     elif [ -e "$child" ]; then
+       # Increment the file counter
+       file_count=$((file_count + 1))
+     fi
+   done
 }
 
 # Set the root directory from the first argument, default to current directory if not provided

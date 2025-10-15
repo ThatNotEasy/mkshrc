@@ -18,21 +18,28 @@ _exist() {
   command -v "$1" >/dev/null 2>&1
 }
 
+# Color functions
+_info() { echo -e "${BLUE:-}[I]${NC:-} $1"; }
+_success() { echo -e "${GREEN:-}[✓]${NC:-} $1"; }
+_warning() { echo -e "${YELLOW:-}[W]${NC:-} $1"; }
+_error() { echo -e "${RED:-}[E]${NC:-} $1"; }
+_step() { echo -e "${CYAN:-}[→]${NC:-} $1"; }
+_highlight() { echo -e "${WHITE:-}${1}${NC:-}"; }
+
 # Resolve the actual binary path, handling aliases
 # Example: if "ls" is an alias, this returns the real command target
 _resolve() {
-  local binary="$1"
-  local resolved="$(command -v "$binary" 2>/dev/null)"
+   local binary="$1"
+   local resolved="$(command -v "$binary" 2>/dev/null)"
 
-  # If the result is an alias, extract the target
-  if echo "$resolved" | grep -q '^alias '; then
-    # Extract alias target
-    binary="$(echo "$resolved" | grep -o '^alias .*$' | cut -d '=' -f2-)"
-    #binary="$(echo "$resolved" | cut -d '=' -f2-)"
-  fi
+   # If the result is an alias, extract the target
+   if echo "$resolved" | grep -q '^alias '; then
+     # Extract alias target more robustly
+     binary="$(echo "$resolved" | sed 's/^alias [^=]*=//' | sed 's/^ *//' | sed 's/ *$//')"
+   fi
 
-  # Remove surrounding quotes if present
-  echo "$binary" | sed "s/^'\(.*\)'$/\1/"
+   # Remove surrounding quotes if present (both single and double)
+   echo "$binary" | sed "s/^'\(.*\)'$/\1/" | sed 's/^"\(.*\)"$/\1/'
 }
 
 ###############################################################################
@@ -64,10 +71,10 @@ if [ "$color_prompt" = yes ]; then
   alias diff='diff --color'
 fi
 
-# Common shortcuts
-alias ll="$(_resolve ls) -alF"     # long list with file types
-alias la="$(_resolve ls) -A"       # list all except . and ..
-alias l="$(_resolve ls) -CF"       # compact list
+# Common shortcuts - resolve at runtime for dynamic updates
+alias ll='ls -alF'     # long list with file types
+alias la='ls -A'       # list all except . and ..
+alias l='ls -CF'       # compact list
 alias rm='rm -rf'                  # recursive remove (dangerous but convenient)
 alias reset='stty sane < /dev/tty' # restore terminal to default state
 export FIGNORE=''
@@ -108,30 +115,38 @@ _exist find && [ "$color_prompt" = yes ] && {
 }
 
 pull() {
-  local src_path="$1"
-  local tmp_path="$TMPDIR/$(basename "$src_path")"
+   local src_path="$1"
+   [ -z "$src_path" ] && { echo "Usage: pull <path>"; return 1; }
+   [ ! -e "$src_path" ] && { echo "Source path does not exist: $src_path"; return 1; }
 
-  # Decide whether to use sudo (only if current user is NOT root)
-  [ "$(sudo id -un 2>&1)" = 'root' ] && local prefix='sudo'
+   local tmp_path="$TMPDIR/$(basename "$src_path")"
 
-  # Copy file into TMPDIR (suppressing output). Fail fast if copy fails.
-  $prefix cp -af "$src_path" "$tmp_path" >/dev/null 2>&1 || {
-    echo "Failed to copy $src_path"
-    return 1
-  }
+   # Ensure destination directory exists for directories
+   if [ -d "$src_path" ]; then
+     mkdir -p "$tmp_path" 2>/dev/null || { echo "Failed to create destination directory"; return 1; }
+   fi
 
-  # Change ownership to 'shell:shell' so that the adb shell user can access it.
-  # -R ensures it works for directories too.
-  $prefix chown -R shell:shell "$tmp_path" >/dev/null 2>&1 || {
-    echo "Failed to chown $tmp_path"
-  }
+   # Decide whether to use sudo (only if current user is NOT root)
+   [ "$(sudo id -un 2>&1)" = 'root' ] && local prefix='sudo'
 
-  # Set SELinux context to match shell data files, again recursive for directories.
-  $prefix chcon -R u:object_r:shell_data_file:s0 "$tmp_path" >/dev/null 2>&1 || {
-    echo "Failed to set SELinux context on $tmp_path"
-  }
+   # Copy file into TMPDIR (suppressing output). Fail fast if copy fails.
+   $prefix cp -af "$src_path" "$tmp_path" >/dev/null 2>&1 || {
+     echo "Failed to copy $src_path"
+     return 1
+   }
 
-  echo "Pulled: $tmp_path"
+   # Change ownership to 'shell:shell' so that the adb shell user can access it.
+   # -R ensures it works for directories too.
+   $prefix chown -R shell:shell "$tmp_path" >/dev/null 2>&1 || {
+     echo "Failed to chown $tmp_path"
+   }
+
+   # Set SELinux context to match shell data files, again recursive for directories.
+   $prefix chcon -R u:object_r:shell_data_file:s0 "$tmp_path" >/dev/null 2>&1 || {
+     echo "Failed to set SELinux context on $tmp_path"
+   }
+
+   echo "Pulled: $tmp_path"
 }
 export pull
 
@@ -143,7 +158,7 @@ gitinfo() {
   }
 
   # Check if we're in a git repository
-  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1 && ! git rev-parse --is-inside-git-dir >/dev/null 2>&1; then
     echo 'Not in a git repository' >&2
     return 1
   fi
@@ -309,26 +324,32 @@ sudo() {
 export sudo
 
 frida() {
-  # Show help first (before checking for binary)
-  case "$1" in
-  -h|--help|help)
-    echo "Frida server management utility"
-    echo ""
-    echo "Usage: frida {start|status|stop|version|help}"
-    echo ""
-    echo "Commands:"
-    echo "  start    Start the Frida server in daemon mode"
-    echo "  status   Check if Frida server is running"
-    echo "  stop     Stop the Frida server"
-    echo "  version  Show Frida server version"
-    echo "  help     Show this help message"
-    echo ""
-    echo "Note: Root privileges recommended for start/stop operations"
-    echo "      Can run without root on some devices/configurations"
-    echo "      Requires frida-server binary in PATH"
-    return 0
-    ;;
-  esac
+   # Show help first (before checking for binary)
+   case "$1" in
+   -h|--help|help)
+     echo "Frida server management utility"
+     echo ""
+     echo "Usage: frida {start|status|stop|version|help}"
+     echo ""
+     echo "Commands:"
+     echo "  start    Start the Frida server in daemon mode"
+     echo "  status   Check if Frida server is running"
+     echo "  stop     Stop the Frida server"
+     echo "  version  Show Frida server version"
+     echo "  help     Show this help message"
+     echo ""
+     echo "Note: Root privileges recommended for start/stop operations"
+     echo "      Can run without root on some devices/configurations"
+     echo "      Requires frida-server binary in PATH"
+     return 0
+     ;;
+   version)
+     # Show Frida version without binary check
+     frida-server --version 2>/dev/null && return 0
+     echo 'frida-server binary not found in PATH' >&2
+     return 1
+     ;;
+   esac
 
   # Ensure the frida-server binary is available
   _exist frida-server || {
@@ -337,15 +358,11 @@ frida() {
     return 1
   }
 
-  # Show Frida version
-  [ "$1" = 'version' ] && {
-    frida-server --version
-    return 0
-  }
+  # Version check moved to case statement above
 
   # Helper function to check if frida-server is running (avoids recursion)
   _frida_is_running() {
-    pgrep -f frida-server >/dev/null 2>&1
+    pgrep -x frida-server >/dev/null 2>&1
   }
 
   # Check if we have root privileges (optional for non-rooted devices)
@@ -434,6 +451,145 @@ frida() {
 }
 export frida
 
+# WiFi configuration parser - displays saved WiFi networks with SSID, password, and security
+wlan() {
+  local config_file="/data/misc/wifi/WifiConfigStore.xml"
+  local wpa_file="/data/misc/wifi/wpa_supplicant.conf"
+  local local_config="$TMPDIR/package/WifiConfigStore.xml"
+  local local_wpa="$TMPDIR/package/wpa_supplicant.conf"
+  local tmp_config="$TMPDIR/WifiConfigStore.xml"
+  local tmp_wpa="$TMPDIR/wpa_supplicant.conf"
+
+  echo "=== WiFi Network Information ==="
+  echo
+
+  # Try to read saved networks from local copies first (works on non-rooted devices)
+  if [ -f "$local_config" ]; then
+    config_file="$local_config"
+    echo "Using local WifiConfigStore.xml copy from package/"
+  elif [ -f "$tmp_config" ]; then
+    config_file="$tmp_config"
+    echo "Using WifiConfigStore.xml copy from tmp/"
+  fi
+
+  if [ -f "$local_wpa" ]; then
+    wpa_file="$local_wpa"
+    echo "Using local wpa_supplicant.conf copy from package/"
+  elif [ -f "$tmp_wpa" ]; then
+    wpa_file="$tmp_wpa"
+    echo "Using wpa_supplicant.conf copy from tmp/"
+  fi
+
+  # Try to read saved networks from WifiConfigStore.xml (requires root on most devices)
+  if [ -f "$config_file" ] && head -1 "$config_file" >/dev/null 2>&1; then
+    echo "=== Saved Networks (from $config_file) ==="
+
+    # Parse networks using sed and grep for better compatibility
+    networks=$(grep -n "<Network>" "$config_file" | cut -d: -f1)
+    for start_line in $networks; do
+      # Find the end of this network block
+      end_line=$(tail -n +$start_line "$config_file" | grep -n "</Network>" | head -1 | cut -d: -f1)
+      end_line=$((start_line + end_line - 1))
+
+      # Extract network block
+      network_block=$(sed -n "${start_line},${end_line}p" "$config_file")
+
+      # Extract SSID
+      ssid=$(echo "$network_block" | grep '<string name="SSID">' | sed 's|.*<string name="SSID">||; s|</string>.*||')
+
+      # Extract PreSharedKey
+      psk=$(echo "$network_block" | grep '<string name="PreSharedKey">' | sed 's|.*<string name="PreSharedKey">||; s|</string>.*||')
+
+      # Extract KeyMgmt
+      keymgmt=$(echo "$network_block" | grep '<string name="KeyMgmt">' | sed 's|.*<string name="KeyMgmt">||; s|</string>.*||')
+
+      if [ -n "$ssid" ]; then
+        security="Open"
+        case "$keymgmt" in
+          "WPA_PSK") security="WPA/WPA2" ;;
+          "WPA2_PSK") security="WPA2" ;;
+          "WPA3_PSK") security="WPA3" ;;
+          "IEEE8021X") security="802.1X" ;;
+        esac
+
+        echo "SSID: $ssid"
+        echo "Password: $psk"
+        echo "Security: $security"
+        echo "----------------------------------------"
+      fi
+    done
+  elif [ -f "$config_file" ]; then
+    echo "=== Saved Networks ==="
+    echo "System config file exists but requires root access to read."
+    echo "Try: sudo wlan"
+    echo
+  fi
+
+  # Try to read from wpa_supplicant.conf (may be accessible on some devices)
+  if [ -f "$wpa_file" ] && head -1 "$wpa_file" >/dev/null 2>&1; then
+    echo "=== Networks from wpa_supplicant ==="
+
+    # Parse wpa_supplicant.conf using sed
+    networks=$(grep -n "^network={" "$wpa_file" | cut -d: -f1)
+    for start_line in $networks; do
+      # Find the end of this network block
+      end_line=$(tail -n +$start_line "$wpa_file" | grep -n "^}" | head -1 | cut -d: -f1)
+      end_line=$((start_line + end_line - 1))
+
+      # Extract network block
+      network_block=$(sed -n "${start_line},${end_line}p" "$wpa_file")
+
+      # Extract SSID
+      ssid=$(echo "$network_block" | grep '^[[:space:]]*ssid=' | sed 's/.*ssid="\([^"]*\)".*/\1/')
+
+      # Extract PSK
+      psk=$(echo "$network_block" | grep '^[[:space:]]*psk=' | sed 's/.*psk="\([^"]*\)".*/\1/')
+
+      if [ -n "$ssid" ]; then
+        echo "SSID: $ssid"
+        echo "Password: $psk"
+        echo "Security: WPA/WPA2"
+        echo "----------------------------------------"
+      fi
+    done
+  fi
+
+  # Show current connection info using dumpsys (works on most devices)
+  echo "=== Current Connection ==="
+  if _exist dumpsys; then
+    # Capture dumpsys output once to avoid broken pipe errors
+    local dumpsys_output=$(dumpsys wifi 2>/dev/null)
+
+    # Extract information from the captured output
+    local connected_ssid=$(echo "$dumpsys_output" | grep -E "SSID:" | head -1 | sed 's/.*SSID: \([^,]*\).*/\1/' | tr -d '"')
+    local connected_bssid=$(echo "$dumpsys_output" | grep -E "BSSID:" | head -1 | sed 's/.*BSSID: \([^,]*\).*/\1/')
+    local link_speed=$(echo "$dumpsys_output" | grep -E "linkSpeed:" | head -1 | sed 's/.*linkSpeed: \([^,]*\).*/\1/')
+    local wifi_standard=$(echo "$dumpsys_output" | grep -E "wifiStandard:" | head -1 | sed 's/.*wifiStandard: \([^,]*\).*/\1/')
+    local is_connected=$(echo "$dumpsys_output" | grep -E "mIsConnected:" | head -1 | awk '{print $2}')
+    local ip_addr=$(echo "$dumpsys_output" | grep -E "ipAddress:" | head -1 | sed 's/.*ipAddress: \([^,]*\).*/\1/')
+    local gateway=$(echo "$dumpsys_output" | grep -E "gateway:" | head -1 | sed 's/.*gateway: \([0-9.]*\).*/\1/')
+
+    if [ "$is_connected" = "true" ] && [ -n "$connected_ssid" ]; then
+      echo "Connected to: $connected_ssid"
+      [ -n "$connected_bssid" ] && echo "BSSID: $connected_bssid"
+      [ -n "$wifi_standard" ] && echo "WiFi Standard: $wifi_standard"
+      [ -n "$link_speed" ] && echo "Link Speed: $link_speed Mbps"
+      [ -n "$ip_addr" ] && echo "IP Address: $ip_addr"
+      [ -n "$gateway" ] && echo "Gateway: $gateway"
+    else
+      echo "Not connected to any WiFi network"
+    fi
+  else
+    echo "dumpsys not available for connection info"
+  fi
+
+  echo
+  echo "Note: Passwords are only shown for networks with saved credentials."
+  echo "Some networks may use other authentication methods."
+  echo "For full access to saved networks, root privileges may be required."
+}
+export wlan
+
 ###############################################################################
 # Persistence Handling (mkshrc overlay before reboot)
 ###############################################################################
@@ -483,13 +639,16 @@ if [ "$rc_root" != "$rc_tmpfs" ]; then
     sudo rm -rf "$rc_bak" # Clean up temporary backup
 
     # Copy the current script into tmpfs
-    sudo ln -sf "$DEFAULT_RC/mkshrc" "$rc_tmpfs/mkshrc"
+    sudo cp -af "$DEFAULT_RC/mkshrc" "$rc_tmpfs/mkshrc"
 
     # Recursively copy the "bin" folder (containing binaries) into tmpfs
-    sudo ln -sf "$rc_root/bin" "$rc_tmpfs/bin"
+    sudo cp -af "$rc_root/bin" "$rc_tmpfs/bin"
 
     # Set ownership of all files in tmpfs to root:root
     sudo chown -R root:root "$rc_tmpfs"
+
+    # Set ownership of mkshrc and bin to shell:shell for adb access
+    sudo chown -R shell:shell "$rc_tmpfs/mkshrc" "$rc_tmpfs/bin"
 
     # Restoring SELinux objects by default
     sudo chcon -R u:object_r:system_file:s0 "$rc_tmpfs"
@@ -506,6 +665,9 @@ if [ "$rc_root" != "$rc_tmpfs" ]; then
 
     # Provide edition support
     sudo chcon -R u:object_r:shell_data_file:s0 "$rc_tmpfs/mkshrc" "$rc_tmpfs/bin"
+
+    # Set SELinux context for bin directory to allow execution
+    sudo chcon -R u:object_r:system_file:s0 "$rc_tmpfs/bin"
 
     rc_root="$rc_tmpfs"
     echo '[I] Script mount permanently until next reboot'
@@ -698,29 +860,31 @@ _find_case_insensitive_dirs() {
 
 # Enhanced cd function with case-insensitive completion support
 cd() {
-    # Go to home directory if no arguments
-    (( $# == 0 )) && { builtin cd; return $?; }
-    
-    local target="$1"
-    
-    # Use target directly if it exists
-    [[ -d "$target" ]] && { builtin cd "$target"; return $?; }
-    
-    local dir="${target%/*}" base="${target##*/}"
-    [[ "$dir" == "$target" ]] && dir="."
-    
-    # Look for case-insensitive match
-    if [[ -d "$dir" ]]; then
-        local entry basename lower_base="${base,,}"
-        for entry in "$dir"/*; do
-            [[ ! -d "$entry" ]] && continue
-            basename="${entry##*/}"
-            [[ "${basename,,}" == "$lower_base" ]] && { builtin cd "$entry"; return $?; }
-        done
-    fi
-    
-    # Fall back to original target
-    builtin cd "$target"
+     # Go to home directory if no arguments
+     [ $# -eq 0 ] && { builtin cd; return $?; }
+
+     local target="$1"
+
+     # Use target directly if it exists
+     [ -d "$target" ] && { builtin cd "$target"; return $?; }
+
+     local dir="${target%/*}" base="${target##*/}"
+     [ "$dir" = "$target" ] && dir="."
+
+     # Look for case-insensitive match (POSIX compatible)
+     if [ -d "$dir" ]; then
+         local entry basename
+         local lower_base="$(echo "$base" | tr '[:upper:]' '[:lower:]')"
+         for entry in "$dir"/*; do
+             [ ! -d "$entry" ] && continue
+             basename="${entry##*/}"
+             local lower_basename="$(echo "$basename" | tr '[:upper:]' '[:lower:]')"
+             [ "$lower_basename" = "$lower_base" ] && { builtin cd "$entry"; return $?; }
+         done
+     fi
+
+     # Fall back to original target
+     builtin cd "$target"
 }
 
 # Main completion function

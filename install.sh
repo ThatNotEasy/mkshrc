@@ -43,11 +43,11 @@ _step() { echo -e "${CYAN}[→]${NC} $1"; }
 _highlight() { echo -e "${WHITE}${1}${NC}"; }
 
 # Check if a command exists in PATH
-# Usage: _exist command_name
-# Returns: 0 if exists, 1 if not found
 _exist() {
   command -v "$1" >/dev/null 2>&1
 }
+
+
 
 # =============================================================================
 # CONFIGURATION SETTINGS
@@ -103,7 +103,6 @@ _success "Using package architecture: $PACKAGE_ABI"
 # =============================================================================
 # CLEANUP AND INITIALIZATION
 # =============================================================================
-_step "Cleaning previous installation..."
 rm -rf "$rc_bin"
 mkdir -p "$rc_bin"
 _success "Clean installation directory prepared"
@@ -112,8 +111,11 @@ _success "Clean installation directory prepared"
 # SUPOLICY INSTALLATION (Magisk compatibility)
 # =============================================================================
 # Provides policy manipulation utilities for rooted devices
+_exist() {
+  command -v "$1" >/dev/null 2>&1
+}
+
 _exist supolicy || {
-  _step "Installing supolicy binaries..."
   cp -f "$rc_package/$PACKAGE_ABI/supolicy/supolicy" "$rc_bin/supolicy" 2>/dev/null || _warning "supolicy not found for $PACKAGE_ABI"
   cp -f "$rc_package/$PACKAGE_ABI/supolicy/libsupol.so" "$rc_bin/libsupol.so" 2>/dev/null || _warning "libsupol.so not found for $PACKAGE_ABI"
   _success "Security policy tools installed"
@@ -123,8 +125,7 @@ _exist supolicy || {
 # FRIDA SERVER INSTALLATION
 # =============================================================================
 # Dynamic instrumentation toolkit for developers and reverse engineers
-_step "Installing Frida server version $FRIDA for $CPU_ABI..."
-frida=$(find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-$FRIDA*android-*" 2>/dev/null | head -n 1)
+frida=$(find "$rc_package/$PACKAGE_ABI/frida" -type f -name "frida-server-$FRIDA*android-*" 2>/dev/null | sort -V | tail -n 1)
 
 if [ -z "$frida" ]; then
   _warning "Frida version $FRIDA not available for $PACKAGE_ABI"
@@ -148,7 +149,6 @@ fi
 # =============================================================================
 # CORE UTILITIES INSTALLATION
 # =============================================================================
-_step "Installing additional binaries..."
 
 # BusyBox - Multi-call binary combining many common Unix utilities
 cp -f "$rc_package/$PACKAGE_ABI/busybox/libbusybox.so" "$rc_bin/busybox" 2>/dev/null || _warning "busybox not found for $PACKAGE_ABI"
@@ -164,7 +164,6 @@ _success "Core utilities installed"
 # =============================================================================
 # TCPDUMP NETWORK PACKET ANALYZER
 # =============================================================================
-_step "Installing tcpdump network packet analyzer..."
 
 cp -f "$rc_package/$PACKAGE_ABI/tcpdump/tcpdump" "$rc_bin/tcpdump" 2>/dev/null || _warning "tcpdump not found for $PACKAGE_ABI"
 
@@ -173,7 +172,6 @@ _success "tcpdump installed"
 # =============================================================================
 # SSH SECURE SHELL CLIENT AND SERVER
 # =============================================================================
-_step "Installing SSH secure shell utilities..."
 
 # SSH client and related tools
 [ -f "$rc_package/$PACKAGE_ABI/ssh/ssh" ] && {
@@ -193,7 +191,6 @@ _success "SSH utilities installed"
 # =============================================================================
 # NGROK SECURE TUNNELS TO LOCALHOST
 # =============================================================================
-_step "Installing Ngrok tunneling tool..."
 
 [ -f "$rc_package/$PACKAGE_ABI/ngrok/ngrok" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/ngrok/ngrok" "$rc_bin/ngrok"
@@ -204,7 +201,6 @@ _step "Installing Ngrok tunneling tool..."
 # =============================================================================
 # GIT VERSION CONTROL SYSTEM
 # =============================================================================
-_step "Installing Git version control system..."
 
 [ -f "$rc_package/$PACKAGE_ABI/git/git" ] && {
   cp -f "$rc_package/$PACKAGE_ABI/git/git" "$rc_bin/git"
@@ -244,7 +240,6 @@ EOF
 # =============================================================================
 # TEXT EDITORS AND SYSTEM TOOLS
 # =============================================================================
-_step "Installing text editors and system tools..."
 
 # Vim - Advanced text editor with extensive customization
 [ -f "$rc_package/$PACKAGE_ABI/vim/vim" ] && {
@@ -256,7 +251,6 @@ _step "Installing text editors and system tools..."
 
   # Vim configuration files and runtime environment
   if [ -d "$rc_package/$PACKAGE_ABI/vim/vim_config/usr/share/vim" ]; then
-    _step "Installing vim configuration files..."
     mkdir -p "$rc_bin/../share"
     cp -rf "$rc_package/$PACKAGE_ABI/vim/vim_config/usr/share/vim" "$rc_bin/../share/"
 
@@ -285,7 +279,6 @@ _step "Installing text editors and system tools..."
 
   # Install ncursesw terminfo files for proper terminal support
   if [ -d "$rc_package/$PACKAGE_ABI/htop/usr/share" ]; then
-    _step "Installing terminfo files for htop..."
     mkdir -p "$rc_bin/../share"
     cp -rf "$rc_package/$PACKAGE_ABI/htop/usr/share"/* "$rc_bin/../share/"
 
@@ -311,17 +304,15 @@ _step "Installing text editors and system tools..."
 # PERMISSIONS AND FINAL SETUP
 # =============================================================================
 # Set ownership and permissions for security and accessibility
-_step "Setting permissions..."
 chown -R shell:shell "$rc_bin"
 chmod -R 755 "$rc_bin"
 _success "Permissions set correctly"
 
 # BusyBox applet setup - Create symlinks for all available utilities
-_step "Setting up BusyBox commands..."
 if [ -f "$rc_bin/busybox" ]; then
   busybox="$rc_bin/busybox"
   chmod +x "$busybox"
-  for applet in $("$busybox" --list | grep -vE '^man$'); do
+  for applet in $("$busybox" --list | grep -v '^man$'); do
     [ -f "$rc_bin/$applet" ] || ln -s "$busybox" "$rc_bin/$applet" 2>/dev/null || true
   done
   _success "BusyBox applets configured"
@@ -341,7 +332,6 @@ rm -f "$rc_path"
   _success "RC script installed at $rc_path"
   
   # Load environment configuration
-  _step "Loading shell environment..."
   . "$rc_path"
   _success "Shell environment loaded"
 }
@@ -373,8 +363,8 @@ _info "Available tools:"
 # CLEANUP AND COMPLETION
 # =============================================================================
 echo ""
-_step "Cleaning up deployment package..."
-rm -rf "$rc_package" "$TMPDIR/install.sh"
+# Note: Cleanup moved to end to avoid removing script while running
+rm -rf "$rc_package"
 _success "Cleanup completed"
 
 _success "mkshrc environment is now active!"
